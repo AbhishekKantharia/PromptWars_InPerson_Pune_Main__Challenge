@@ -247,7 +247,7 @@ I can help you with:
           </button>
           <div className="text-[10px] text-slate-500 flex items-center gap-1">
             <Info className="h-3 w-3" />
-            <span>Gemini 2.5 Active</span>
+            <span>Gemini 3.5 Active</span>
           </div>
         </div>
       </div>
