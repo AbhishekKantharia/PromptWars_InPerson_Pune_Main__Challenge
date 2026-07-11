@@ -327,7 +327,7 @@ function OTPStep({
   );
 }
 
-function ProfileStep({ onComplete }: { onComplete: (p: Partial<any>) => void }) {
+function ProfileStep({ onComplete }: { onComplete: (p: Partial<UserProfile>) => void }) {
   const [name, setName] = useState("");
   const [location, setLocation] = useState("Pune, Maharashtra");
   const [familySize, setFamilySize] = useState(4);

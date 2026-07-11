@@ -5,7 +5,16 @@ import { Sparkles, CheckCircle2, Circle, ListTodo } from "lucide-react";
 import { generatePreparednessplan } from "@/lib/gemini";
 
 export default function PrepareScreen() {
-  const [profile, setProfile] = useState({
+  const [profile, setProfile] = useState<{
+    location: string;
+    familySize: number;
+    hasChildren: boolean;
+    hasElderly: boolean;
+    hasMedicalConditions: boolean;
+    homeType: string;
+    hasVehicle: boolean;
+    floodRiskScore: number;
+  }>({
     location: "Pune, Maharashtra",
     familySize: 4,
     hasChildren: true,
