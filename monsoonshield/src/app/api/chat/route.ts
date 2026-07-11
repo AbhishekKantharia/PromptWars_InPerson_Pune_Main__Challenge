@@ -49,12 +49,15 @@ function validateHistory(history: unknown[]): boolean {
   if (!Array.isArray(history)) return false;
   if (history.length > 50) return false;
   return history.every(
-    (msg: any) =>
-      msg &&
-      typeof msg === "object" &&
-      (msg.role === "user" || msg.role === "assistant") &&
-      typeof msg.content === "string" &&
-      msg.content.length < 10000
+    (msg: unknown) => {
+      if (!msg || typeof msg !== "object") return false;
+      const m = msg as { role?: string; content?: unknown };
+      return (
+        (m.role === "user" || m.role === "assistant") &&
+        typeof m.content === "string" &&
+        m.content.length < 10000
+      );
+    }
   );
 }
 

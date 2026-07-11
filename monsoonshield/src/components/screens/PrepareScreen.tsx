@@ -254,7 +254,7 @@ export default function PrepareScreen() {
                   <ListTodo className="h-12 w-12 text-slate-600" />
                   <h4 className="font-bold text-white text-sm">No Custom Plan Generated</h4>
                   <p className="text-xs text-slate-400 max-w-xs">
-                    Choose your family composition parameters on the left and tap 'Generate AI Plan' to create personalized NDMA-grounded protocols.
+                    Choose your family composition parameters on the left and tap &apos;Generate AI Plan&apos; to create personalized NDMA-grounded protocols.
                   </p>
                 </div>
               )}
