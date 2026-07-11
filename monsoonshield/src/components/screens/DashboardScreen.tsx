@@ -11,9 +11,10 @@ import { MOCK_ALERTS, MOCK_WEATHER, RISK_SCORE_FACTORS } from "@/lib/mockData";
 import { getRiskColor, getRiskBgColor, getRiskLabel, getSeverityColor, getAlertIcon } from "@/lib/utils";
 import { generateBriefing } from "@/lib/gemini";
 import { useAuth } from "@/lib/AuthContext";
+import { SidebarTab } from "@/components/layout/Sidebar";
 
 interface DashboardScreenProps {
-  setActiveTab: (tab: any) => void;
+  setActiveTab: (tab: SidebarTab) => void;
   language: string;
 }
 
@@ -22,10 +23,6 @@ export default function DashboardScreen({ setActiveTab, language }: DashboardScr
   const [riskScore] = useState(58);
   const [briefing, setBriefing] = useState("");
   const [isGeneratingBriefing, setIsGeneratingBriefing] = useState(false);
-
-  useEffect(() => {
-    generateAIBriefing();
-  }, [language]);
 
   const generateAIBriefing = async () => {
     setIsGeneratingBriefing(true);
