@@ -1,17 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Droplets, Wind, Bug, AlertTriangle, Phone,
-  Heart, Shield
+  Heart, Shield, Loader2
 } from "lucide-react";
-
-const DISEASE_ALERTS = [
-  { disease: "Dengue", risk: "high", cases: 142, area: "Wards 3, 5, 8", trend: "rising", icon: "🦟" },
-  { disease: "Malaria", risk: "medium", cases: 67, area: "Wards 12, 15", trend: "stable", icon: "🩸" },
-  { disease: "Cholera", risk: "low", cases: 8, area: "Ward 21", trend: "declining", icon: "💧" },
-  { disease: "Leptospirosis", risk: "medium", cases: 23, area: "River-adjacent areas", trend: "rising", icon: "🐀" },
-];
+import type { RealAlert } from "@/lib/realData";
 
 const PREVENTION_CHECKLIST = [
   { id: 1, label: "Empty flower pots, coolers, tires weekly", category: "mosquito", done: false },
@@ -35,9 +29,37 @@ const WARNING_SIGNS = [
   { symptom: "Skin rash with joint pain", urgency: "medium", action: "Possible dengue — get tested" },
 ];
 
+const HEALTH_TIPS = [
+  { disease: "Dengue", prevention: "Eliminate standing water. Use repellent. Seek care for high fever with headache.", icon: "🦟" },
+  { disease: "Malaria", prevention: "Sleep under treated nets. Wear full sleeves. Report fever within 24 hours.", icon: "🩸" },
+  { disease: "Cholera", prevention: "Drink only boiled/ bottled water. Maintain oral hygiene. Report acute diarrhea.", icon: "💧" },
+  { disease: "Leptospirosis", prevention: "Avoid floodwater contact. Wear boots in waterlogged areas. Wash wounds immediately.", icon: "🐀" },
+];
+
 export default function HealthScreen() {
   const [checklist, setChecklist] = useState(PREVENTION_CHECKLIST);
   const [activeFilter, setActiveFilter] = useState("all");
+  const [healthAlerts, setHealthAlerts] = useState<RealAlert[]>([]);
+  const [alertsLoading, setAlertsLoading] = useState(true);
+
+  // Fetch real NDMA alerts and filter for health-related ones
+  useEffect(() => {
+    setAlertsLoading(true);
+    fetch("/api/alerts")
+      .then(r => r.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          const healthRelated = data.filter((a: RealAlert) => {
+            const type = (a.disasterType || "").toLowerCase();
+            return type.includes("heat") || type.includes("cold") || type.includes("health") ||
+                   type.includes("flood") || type.includes("rain") || type.includes("disease");
+          });
+          setHealthAlerts(healthRelated.slice(0, 5));
+        }
+      })
+      .catch(() => {})
+      .finally(() => setAlertsLoading(false));
+  }, []);
 
   const toggleCheck = (id: number) => {
     setChecklist((prev) => prev.map((item) => (item.id === id ? { ...item, done: !item.done } : item)));
@@ -57,41 +79,76 @@ export default function HealthScreen() {
         <p className="text-xs text-slate-400 mt-1">Disease surveillance, prevention checklists, and health advisories</p>
       </div>
 
-      {/* Disease Alerts */}
+      {/* Active NDMA Health Alerts — Real Data */}
+      <div className="glass-card p-6 space-y-4">
+        <h3 className="text-sm font-bold text-white uppercase tracking-wide flex items-center gap-2">
+          <AlertTriangle className="h-4 w-4 text-amber-400" />
+          Active Health-Related Alerts — NDMA SACHET
+          <span className="text-[10px] bg-green-500/10 text-green-400 px-2 py-0.5 rounded font-bold uppercase ml-auto">
+            Live Data
+          </span>
+        </h3>
+        {alertsLoading ? (
+          <div className="flex items-center gap-2 text-slate-400 py-4">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span className="text-xs">Fetching health alerts from NDMA...</span>
+          </div>
+        ) : healthAlerts.length === 0 ? (
+          <div className="p-3 rounded-lg bg-green-500/5 border border-green-500/20 text-xs text-green-400 flex items-center gap-2">
+            <Shield className="h-4 w-4" />
+            No active health-related disaster alerts. Standard monsoon precautions apply.
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {healthAlerts.map((alert) => (
+              <div
+                key={alert.id}
+                className={`p-3 rounded-lg border ${
+                  alert.severityColor === "red" ? "bg-red-500/5 border-red-500/20" :
+                  alert.severityColor === "orange" ? "bg-amber-500/5 border-amber-500/20" :
+                  "bg-blue-500/5 border-blue-500/20"
+                }`}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="text-sm font-bold text-white">{alert.disasterType}</p>
+                    <p className="text-[11px] text-slate-400">{alert.area}</p>
+                    <p className="text-[11px] text-slate-500 mt-1">{alert.message}</p>
+                  </div>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded shrink-0 ${
+                    alert.severityColor === "red" ? "bg-red-500/20 text-red-400" :
+                    alert.severityColor === "orange" ? "bg-amber-500/20 text-amber-400" :
+                    "bg-blue-500/20 text-blue-400"
+                  }`}>
+                    {alert.severity}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Disease Risk Assessment — Based on current weather conditions */}
       <div className="glass-card p-6 space-y-4">
         <h3 className="text-sm font-bold text-white uppercase tracking-wide flex items-center gap-2">
           <Bug className="h-4 w-4 text-amber-400" />
-          Active Disease Surveillance — IDSP
+          Monsoon Disease Risk Guide — MOHFW / NVBDCP
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {DISEASE_ALERTS.map((d) => (
+          {HEALTH_TIPS.map((d) => (
             <div
               key={d.disease}
-              className={`p-4 rounded-xl border ${
-                d.risk === "high"
-                  ? "bg-red-500/5 border-red-500/20"
-                  : d.risk === "medium"
-                  ? "bg-amber-500/5 border-amber-500/20"
-                  : "bg-green-500/5 border-green-500/20"
-              }`}
+              className="p-4 rounded-xl border bg-slate-800/20 border-slate-700/50"
             >
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-2">
                   <span className="text-2xl">{d.icon}</span>
                   <div>
                     <p className="text-sm font-bold text-white">{d.disease}</p>
-                    <p className="text-[11px] text-slate-400">{d.area}</p>
+                    <p className="text-[11px] text-slate-400 mt-1">{d.prevention}</p>
                   </div>
                 </div>
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
-                  d.risk === "high" ? "bg-red-500/20 text-red-400" : d.risk === "medium" ? "bg-amber-500/20 text-amber-400" : "bg-green-500/20 text-green-400"
-                }`}>
-                  {d.risk} risk
-                </span>
-              </div>
-              <div className="flex items-center justify-between mt-3 text-xs text-slate-400">
-                <span>Cases: <span className="text-white font-bold">{d.cases}</span></span>
-                <span>Trend: <span className={d.trend === "rising" ? "text-red-400" : d.trend === "stable" ? "text-amber-400" : "text-green-400"}>{d.trend}</span></span>
               </div>
             </div>
           ))}
@@ -199,7 +256,7 @@ export default function HealthScreen() {
 
       <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/30 text-xs text-blue-300 flex items-center gap-2">
         <Shield className="h-4 w-4 shrink-0" />
-        Sources: MOHFW Monsoon Health Guidelines | NVBDCP | IDSP Real-Time Surveillance | WHO India
+        Sources: MOHFW Monsoon Health Guidelines | NVBDCP | NDMA SACHET Live Alerts | WHO India
       </div>
     </div>
   );
