@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { MOCK_ALERTS, MOCK_WEATHER, RISK_SCORE_FACTORS } from "@/lib/mockData";
 import { getRiskColor, getRiskBgColor, getRiskLabel, getSeverityColor, getAlertIcon } from "@/lib/utils";
+import { generateBriefing } from "@/lib/gemini";
+import { useAuth } from "@/lib/AuthContext";
 
 interface DashboardScreenProps {
   setActiveTab: (tab: any) => void;
