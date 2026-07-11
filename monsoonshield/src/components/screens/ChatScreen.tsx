@@ -151,12 +151,36 @@ I can help you with:
   const startVoiceRecognition = () => {
     if (typeof window === "undefined") return;
     interface SpeechRecognitionEvent {
-      results: { [index: number]: { [index: number]: { transcript: string } } };
+      results: SpeechRecognitionResultList;
+    }
+    interface SpeechRecognitionResultList {
+      length: number;
+      item: (index: number) => SpeechRecognitionResult | undefined;
+      [index: number]: SpeechRecognitionResult;
+    }
+    interface SpeechRecognitionResult {
+      length: number;
+      item: (index: number) => SpeechRecognitionAlternative | undefined;
+      [index: number]: SpeechRecognitionAlternative;
+    }
+    interface SpeechRecognitionAlternative {
+      transcript: string;
+    }
+
+    interface SpeechRecognitionLike {
+      new (): {
+        lang: string;
+        continuous: boolean;
+        interimResults: boolean;
+        onresult: ((event: SpeechRecognitionEvent) => void) | null;
+        onerror: ((event: unknown) => void) | null;
+        start: () => void;
+      };
     }
 
     const WinWithSR = window as unknown as {
-      SpeechRecognition?: new () => { lang: string; continuous: boolean; interimResults: boolean; onresult: ((e: SpeechRecognitionEvent) => void) | null; onerror: ((e: unknown) => void) | null; start: () => void };
-      webkitSpeechRecognition?: new () => { lang: string; continuous: boolean; interimResults: boolean; onresult: ((e: SpeechRecognitionEvent) => void) | null; onerror: ((e: unknown) => void) | null; start: () => void };
+      SpeechRecognition?: SpeechRecognitionLike;
+      webkitSpeechRecognition?: SpeechRecognitionLike;
     };
     const SpeechRecognitionAPI = WinWithSR.SpeechRecognition || WinWithSR.webkitSpeechRecognition;
 
