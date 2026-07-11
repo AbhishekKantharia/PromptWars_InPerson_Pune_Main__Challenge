@@ -435,3 +435,4 @@ I can help you with:
 
 ⚡ *Powered by Google Gemini | NDMA-Grounded*
 📞 Emergency: 112 (National) | 1078 (Flood Helpline)`;
+}
