@@ -120,25 +120,25 @@ export default function PrepareScreen() {
                 Special Conditions
               </label>
               <div className="space-y-1.5">
-                {[
-                  { key: "hasChildren", label: "👶 Children under 12" },
-                  { key: "hasElderly", label: "👵 Elderly Members (65+)" },
-                  { key: "hasMedicalConditions", label: "🏥 Regular Medical Needs (Insulin, Dialysis)" },
-                  { key: "hasVehicle", label: "🚗 Family Vehicle (Car/Bike)" },
-                ].map((item) => (
+                {([
+                  { key: "hasChildren" as const, label: "👶 Children under 12" },
+                  { key: "hasElderly" as const, label: "👵 Elderly Members (65+)" },
+                  { key: "hasMedicalConditions" as const, label: "🏥 Regular Medical Needs (Insulin, Dialysis)" },
+                  { key: "hasVehicle" as const, label: "🚗 Family Vehicle (Car/Bike)" },
+                ]).map((item) => (
                   <button
                     key={item.key}
                     onClick={() =>
-                      setProfile({ ...profile, [item.key]: !((profile as any)[item.key]) })
+                      setProfile({ ...profile, [item.key]: !profile[item.key] })
                     }
                     className={`w-full p-2 rounded-lg border text-left text-xs transition-colors flex justify-between items-center ${
-                      (profile as any)[item.key]
+                      profile[item.key]
                         ? "bg-cyan-500/10 border-cyan-500/30 text-cyan-400 font-semibold"
                         : "bg-slate-900/40 border-slate-850 text-slate-400 hover:bg-slate-850"
                     }`}
                   >
                     <span>{item.label}</span>
-                    {(profile as any)[item.key] && <span>✓</span>}
+                    {profile[item.key] && <span>✓</span>}
                   </button>
                 ))}
               </div>
