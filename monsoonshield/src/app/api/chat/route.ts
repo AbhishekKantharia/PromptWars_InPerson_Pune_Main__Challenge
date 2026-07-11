@@ -183,13 +183,21 @@ If asked about shelters, advise the user to: check the MonsoonShield Shelter Fin
       ],
     });
 
-    // Build chat history (exclude last message)
-    const chatHistory = (history || [])
-      .slice(0, -1)
+    // Build chat history — Gemini requires first message role to be 'user'
+    // Filter history to ensure alternating roles starting with 'user'
+    const rawHistory = (history || []).slice(0, -1);
+    const chatHistory = rawHistory
       .map((msg: { role: string; content: string }) => ({
         role: msg.role === "assistant" ? "model" as const : "user" as const,
         parts: [{ text: msg.content }],
-      }));
+      }))
+      .filter((entry, index, arr) => {
+        // Gemini requires first message to be from user — skip leading model messages
+        if (index === 0 && entry.role === "model") return false;
+        // Skip consecutive same-role messages (keep only the last one)
+        if (index > 0 && entry.role === arr[index - 1]!.role) return false;
+        return true;
+      });
 
     const chat = model.startChat({ history: chatHistory });
     const userMsg = realtimeData + referenceData + "\n\n## USER MESSAGE\n" + message;
@@ -200,8 +208,9 @@ If asked about shelters, advise the user to: check the MonsoonShield Shelter Fin
         break;
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "";
-        if (msg.includes("503") && attempt < 2) {
-          await new Promise((r) => setTimeout(r, 2000 * (attempt + 1)));
+        if ((msg.includes("503") || msg.includes("429")) && attempt < 2) {
+          const retryMs = msg.includes("429") ? 60000 : 2000 * (attempt + 1);
+          await new Promise((r) => setTimeout(r, retryMs));
           continue;
         }
         throw e;
@@ -211,7 +220,16 @@ If asked about shelters, advise the user to: check the MonsoonShield Shelter Fin
 
     return NextResponse.json({ reply: responseText });
   } catch (error: unknown) {
-    console.error("API /chat error:", error instanceof Error ? error.message : error);
+    const errMsg = error instanceof Error ? error.message : String(error);
+    console.error("API /chat error:", errMsg);
+
+    if (errMsg.includes("429") || errMsg.includes("quota")) {
+      return NextResponse.json(
+        { error: "AI service quota reached. Please try again later or call 1078 for immediate help." },
+        { status: 429 }
+      );
+    }
+
     return NextResponse.json(
       { error: "Failed to generate response" },
       { status: 500 }
