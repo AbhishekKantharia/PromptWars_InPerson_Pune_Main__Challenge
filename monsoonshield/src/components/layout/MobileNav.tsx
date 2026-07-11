@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import {
   Home, LayoutDashboard, MessageSquare, AlertTriangle, Users,
   ListTodo, Tent, CloudLightning, HeartHandshake, ShieldAlert,
-  ChevronUp
+  Shield, Activity, ChevronUp
 } from "lucide-react";
 import { SidebarTab } from "./Sidebar";
 
@@ -24,6 +24,8 @@ const NAV_ITEMS: { tab: SidebarTab; label: string; icon: React.ElementType; crit
   { tab: "weather", label: "Weather", icon: CloudLightning },
   { tab: "family", label: "Family", icon: HeartHandshake },
   { tab: "command", label: "Command", icon: ShieldAlert },
+  { tab: "insurance", label: "Insurance", icon: Shield },
+  { tab: "health", label: "Health", icon: Activity },
 ];
 
 export default function MobileNav({ activeTab, setActiveTab }: MobileNavProps) {

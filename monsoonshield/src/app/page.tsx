@@ -20,6 +20,8 @@ import SheltersScreen from "@/components/screens/SheltersScreen";
 import WeatherScreen from "@/components/screens/WeatherScreen";
 import FamilyScreen from "@/components/screens/FamilyScreen";
 import CommandScreen from "@/components/screens/CommandScreen";
+import InsuranceScreen from "@/components/screens/InsuranceScreen";
+import HealthScreen from "@/components/screens/HealthScreen";
 
 function AppContent() {
   const { isAuthenticated, user } = useAuth();
@@ -53,6 +55,10 @@ function AppContent() {
         return <FamilyScreen />;
       case "command":
         return <CommandScreen />;
+      case "insurance":
+        return <InsuranceScreen />;
+      case "health":
+        return <HealthScreen />;
       default:
         return <HomeScreen setActiveTab={setActiveTab} setShowEmergencyModal={setShowEmergencyModal} />;
     }
@@ -60,6 +66,7 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col">
+      <a href="#main-content" className="skip-to-content">Skip to main content</a>
       <Navbar
         currentLanguage={language}
         setLanguage={setLanguage}
@@ -68,17 +75,20 @@ function AppContent() {
         onNavigate={setActiveTab}
       />
       <div className="flex-1 flex">
-        {/* Desktop Sidebar - hidden on mobile */}
         <div className="hidden md:block">
           <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
         </div>
-        <main className="flex-1 bg-slate-950/20 relative pb-20 md:pb-0">
+        <main
+          id="main-content"
+          className="flex-1 bg-slate-950/20 relative pb-20 md:pb-0"
+          role="main"
+          aria-label="Main content"
+        >
           <Suspense fallback={<LoadingScreen />}>
             {renderActiveScreen()}
           </Suspense>
         </main>
       </div>
-      {/* Mobile Bottom Nav */}
       <MobileNav activeTab={activeTab} setActiveTab={setActiveTab} />
     </div>
   );

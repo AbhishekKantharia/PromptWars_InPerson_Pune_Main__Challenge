@@ -12,6 +12,8 @@ import {
   CloudLightning,
   HeartHandshake,
   ShieldAlert,
+  Shield,
+  Activity,
 } from "lucide-react";
 
 export type SidebarTab =
@@ -24,7 +26,9 @@ export type SidebarTab =
   | "shelters"
   | "weather"
   | "family"
-  | "command";
+  | "command"
+  | "insurance"
+  | "health";
 
 interface SidebarProps {
   activeTab: SidebarTab;
@@ -43,6 +47,8 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
     { id: "weather" as SidebarTab, label: "Weather Intel", icon: CloudLightning, labelHi: "मौसम जानकारी" },
     { id: "family" as SidebarTab, label: "Family Safety", icon: HeartHandshake, labelHi: "परिवार सुरक्षा" },
     { id: "command" as SidebarTab, label: "Command Center", icon: ShieldAlert, labelHi: "कमांड सेंटर" },
+    { id: "insurance" as SidebarTab, label: "Insurance & Relief", icon: Shield, labelHi: "बीमा व राहत" },
+    { id: "health" as SidebarTab, label: "Health Center", icon: Activity, labelHi: "स्वास्थ्य केंद्र" },
   ];
 
   return (
