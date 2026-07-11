@@ -1,37 +1,75 @@
 "use client";
 
-import { useState } from "react";
-import { Play } from "lucide-react";
+import { useState, useEffect } from "react";
+import { AlertTriangle, Loader2, Phone, ExternalLink, MapPin, Clock } from "lucide-react";
+import type { RealAlert, RealEarthquake, RealWeather, RealFloodData } from "@/lib/realData";
 
-const REFERENCE_VOLUNTEERS = [
-  { id: "v1", name: "SDRF Unit Alpha", skills: ["Water Rescue", "Boat Operations"], available: true, distance: "2.1 km" },
-  { id: "v2", name: "NDRF Team 4", skills: ["Flood Rescue", "Medical First Aid"], available: false, distance: "5.4 km" },
-  { id: "v3", name: "Red Cross Pune", skills: ["Medical", "Shelter Management"], available: true, distance: "3.8 km" },
-  { id: "v4", name: "Local Volunteer Cell", skills: ["Coordination", "Supply Distribution"], available: true, distance: "1.2 km" },
+interface EmergencyContact {
+  name: string;
+  phone: string;
+  role: string;
+  source: string;
+}
+
+const EMERGENCY_CONTACTS: EmergencyContact[] = [
+  { name: "NDRF Control Room", phone: "011-24363260", role: "National Disaster Response Force", source: "ndma.gov.in" },
+  { name: "SDRF Maharashtra", phone: "020-25501292", role: "State Disaster Response Force", source: "maharashtra.gov.in" },
+  { name: "NDMA Helpline", phone: "011-26701728", role: "National Disaster Management Authority", source: "ndma.gov.in" },
+  { name: "National Emergency", phone: "112", role: "Unified Emergency Number", source: "Government of India" },
+  { name: "Flood Helpline", phone: "1078", role: "24/7 Flood Rescue Helpline", source: "NDMA" },
+  { name: "Ambulance / Medical", phone: "108", role: "Emergency Medical Services", source: "Govt of India" },
+  { name: "Fire Brigade", phone: "101", role: "Fire & Rescue Services", source: "Local Municipal" },
+  { name: "Police", phone: "100", role: "Law Enforcement Emergency", source: "Local Police" },
+  { name: "Disaster Helpline", phone: "1070", role: "General Disaster Assistance", source: "NDMA" },
+  { name: "Insurance (IRDAI)", phone: "1800-11-0001", role: "Insurance Regulatory Helpline", source: "IRDAI" },
 ];
 
+const WMO_EMOJI: Record<number, string> = {
+  0: "☀️", 1: "🌤️", 2: "⛅", 3: "☁️",
+  45: "🌫️", 48: "🌫️",
+  51: "🌦️", 53: "🌦️", 55: "🌧️",
+  61: "🌧️", 63: "🌧️", 65: "🌧️",
+  71: "🌨️", 73: "🌨️", 75: "❄️",
+  80: "🌦️", 81: "🌧️", 82: "⛈️",
+  95: "⛈️", 96: "⛈️", 99: "⛈️",
+};
+
+function timeAgo(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+}
+
 export default function CommandScreen() {
-  const [sosAlerts, setSosAlerts] = useState([
-    { id: "sos-101", user: "Ramesh P.", members: 4, needs: ["rescue", "medical"], location: "Bibwewadi, Lane 4", time: "12m ago", status: "unassigned" },
-    { id: "sos-102", user: "Savita K.", members: 2, needs: ["medical"], location: "Katraj Bridge area", time: "18m ago", status: "assigned", assignee: "NDRF Unit 4" },
-    { id: "sos-103", user: "Deepak S.", members: 5, needs: ["food"], location: "Yerwada low lying", time: "25m ago", status: "unassigned" },
-  ]);
+  const [alerts, setAlerts] = useState<RealAlert[]>([]);
+  const [earthquakes, setEarthquakes] = useState<RealEarthquake[]>([]);
+  const [weather, setWeather] = useState<RealWeather | null>(null);
+  const [flood, setFlood] = useState<RealFloodData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<"incidents" | "contacts">("incidents");
 
-  const [activeTab, setActiveTab] = useState<"sos" | "volunteers">("sos");
+  useEffect(() => {
+    setLoading(true);
+    Promise.all([
+      fetch("/api/alerts").then(r => r.json()),
+      fetch("/api/earthquakes").then(r => r.json()),
+      fetch("/api/weather").then(r => r.json()),
+      fetch("/api/flood").then(r => r.json()),
+    ])
+      .then(([alertsData, eqData, weatherData, floodData]) => {
+        if (Array.isArray(alertsData)) setAlerts(alertsData);
+        if (Array.isArray(eqData)) setEarthquakes(eqData);
+        if (!weatherData.error) setWeather(weatherData);
+        if (!floodData.error) setFlood(floodData);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
 
-  const assignRescue = (id: string, unit: string) => {
-    setSosAlerts((prev) =>
-      prev.map((alert) =>
-        alert.id === id ? { ...alert, status: "assigned", assignee: unit } : alert
-      )
-    );
-    alert(`Dispatched ${unit} to rescue location.`);
-  };
-
-  const resolveSos = (id: string) => {
-    setSosAlerts((prev) => prev.filter((alert) => alert.id !== id));
-    alert("SOS emergency resolved. Mark as safe.");
-  };
+  const totalIncidents = alerts.length + earthquakes.length;
 
   return (
     <div className="p-6 space-y-6 max-h-[calc(100vh-73px)] overflow-y-auto w-full">
@@ -40,183 +78,279 @@ export default function CommandScreen() {
           <h2 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
             🛡️ SDRF & Municipal Command Center
           </h2>
-          <p className="text-xs text-slate-400 mt-1">Official disaster agency dispatch command room</p>
+          <p className="text-xs text-slate-400 mt-1">Real-time disaster monitoring — NDMA SACHET + USGS + Open-Meteo</p>
         </div>
-        <span className="px-3 py-1 rounded bg-red-600 text-[10px] font-bold text-white uppercase tracking-wider animate-pulse">
-          🔴 Emergency Active Operations
+        <span className={`px-3 py-1 rounded text-[10px] font-bold text-white uppercase tracking-wider ${
+          totalIncidents > 0 ? "bg-red-600 animate-pulse" : "bg-green-600"
+        }`}>
+          {totalIncidents > 0 ? `🔴 ${totalIncidents} Active Incident(s)` : "✅ All Clear"}
         </span>
       </div>
 
-      {/* Operational stats bar */}
+      {/* Live operational stats bar — computed from real data */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="stat-card border-red-500/20 bg-red-500/5">
-          <span className="text-2xl font-extrabold text-red-500">{sosAlerts.length}</span>
+        <div className={`stat-card ${alerts.length > 0 ? "border-red-500/20 bg-red-500/5" : ""}`}>
+          <span className={`text-2xl font-extrabold ${alerts.length > 0 ? "text-red-500" : "text-green-400"}`}>
+            {alerts.length}
+          </span>
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mt-1">
-            Active SOS Signals
+            NDMA Disaster Alerts
+          </span>
+        </div>
+        <div className={`stat-card ${earthquakes.length > 0 ? "border-amber-500/20 bg-amber-500/5" : ""}`}>
+          <span className={`text-2xl font-extrabold ${earthquakes.length > 0 ? "text-amber-400" : "text-green-400"}`}>
+            {earthquakes.length}
+          </span>
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mt-1">
+            USGS Earthquakes (500km)
           </span>
         </div>
         <div className="stat-card">
-          <span className="text-2xl font-extrabold text-green-400">12</span>
+          <span className="text-2xl font-extrabold text-cyan-400">
+            {weather ? `${weather.temp}°` : "—"}
+          </span>
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mt-1">
-            Active Shelters
+            {weather ? `${weather.condition}` : "Loading Weather..."}
           </span>
         </div>
         <div className="stat-card">
-          <span className="text-2xl font-extrabold text-blue-400">8</span>
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mt-1">
-            NDRF Boats deployed
+          <span className={`text-2xl font-extrabold ${flood?.trend === "rising" ? "text-red-400" : flood?.trend === "falling" ? "text-green-400" : "text-slate-300"}`}>
+            {flood?.currentLevel != null ? `${flood.currentLevel}` : "—"}
           </span>
-        </div>
-        <div className="stat-card">
-          <span className="text-2xl font-extrabold text-cyan-400">142</span>
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mt-1">
-            Volunteers deployed
+            River Discharge {flood?.unit || ""}
           </span>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Alerts & Signals Panel */}
+        {/* Main panel */}
         <div className="lg:col-span-2 space-y-4">
           <div className="flex border-b border-slate-850">
             <button
-              onClick={() => setActiveTab("sos")}
+              onClick={() => setActiveTab("incidents")}
               className={`px-4 py-2 text-xs font-bold uppercase tracking-wider border-b-2 transition-all ${
-                activeTab === "sos"
+                activeTab === "incidents"
                   ? "border-red-500 text-red-400"
                   : "border-transparent text-slate-500 hover:text-slate-300"
               }`}
             >
-              Citizen SOS Dispatch Queue
+              Active Incidents
             </button>
             <button
-              onClick={() => setActiveTab("volunteers")}
+              onClick={() => setActiveTab("contacts")}
               className={`px-4 py-2 text-xs font-bold uppercase tracking-wider border-b-2 transition-all ${
-                activeTab === "volunteers"
+                activeTab === "contacts"
                   ? "border-cyan-500 text-cyan-400"
                   : "border-transparent text-slate-500 hover:text-slate-300"
               }`}
             >
-              Volunteer Deployments
+              Emergency Contacts
             </button>
           </div>
 
-          {activeTab === "sos" ? (
+          {activeTab === "incidents" ? (
             <div className="space-y-3">
-              {sosAlerts.length === 0 ? (
-                <div className="glass-card p-8 border-slate-850 text-center text-slate-500 text-sm">
-                  All Citizen SOS rescue signals resolved! No pending cases.
+              {loading ? (
+                <div className="glass-card p-8 border-slate-800 flex items-center justify-center gap-3">
+                  <Loader2 className="h-5 w-5 animate-spin text-cyan-400" />
+                  <span className="text-sm text-slate-400">Fetching live disaster data...</span>
+                </div>
+              ) : totalIncidents === 0 ? (
+                <div className="glass-card p-8 border-slate-850 text-center text-green-400 text-sm space-y-2">
+                  <span className="text-2xl">✅</span>
+                  <p className="font-semibold">No active disaster incidents detected</p>
+                  <p className="text-xs text-slate-500">NDMA SACHET and USGS report no incidents in your region.</p>
                 </div>
               ) : (
-                sosAlerts.map((alert) => (
-                  <div key={alert.id} className="glass-card p-5 border-slate-800 space-y-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="h-2 w-2 rounded-full bg-red-500 animate-ping" />
-                        <h4 className="font-bold text-white text-sm">{alert.user} ({alert.members} People)</h4>
-                      </div>
-                      <span className="text-[10px] text-slate-500 font-medium">{alert.time}</span>
-                    </div>
-
-                    <div className="text-xs space-y-1">
-                      <div className="flex justify-between">
-                        <span className="text-slate-500 font-medium">Location:</span>
-                        <span className="font-bold text-slate-300">{alert.location}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-500 font-medium">Reported Needs:</span>
-                        <span className="font-semibold text-red-400">{alert.needs.join(", ")}</span>
-                      </div>
-                    </div>
-
-                    <div className="border-t border-slate-850 pt-3 flex gap-2 justify-end">
-                      {alert.status === "unassigned" ? (
-                        <>
-                          <button
-                            onClick={() => assignRescue(alert.id, "Local Volunteer Team")}
-                            className="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-300 transition-colors"
-                          >
-                            Assign Volunteer
-                          </button>
-                          <button
-                            onClick={() => assignRescue(alert.id, "NDRF Unit 4")}
-                            className="px-3 py-1.5 rounded bg-gradient-to-r from-red-600 to-rose-500 hover:opacity-90 text-xs font-bold text-white transition-all flex items-center gap-1"
-                          >
-                            <Play className="h-3 w-3" /> Dispatch NDRF
-                          </button>
-                        </>
-                      ) : (
-                        <div className="flex justify-between items-center w-full">
-                          <span className="text-xs text-green-400 font-semibold flex items-center gap-1">
-                            ✅ Dispatched: {alert.assignee}
+                <>
+                  {/* NDMA Alerts */}
+                  {alerts.map((alert) => (
+                    <div key={`alert-${alert.id}`} className="glass-card p-5 border-slate-800 space-y-3">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-2">
+                          <AlertTriangle className={`h-4 w-4 ${
+                            alert.severityColor === "red" ? "text-red-500" : alert.severityColor === "orange" ? "text-amber-500" : "text-yellow-500"
+                          }`} />
+                          <h4 className="font-bold text-white text-sm">{alert.disasterType}</h4>
+                          <span className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase ${
+                            alert.severityColor === "red" ? "bg-red-500/20 text-red-400" :
+                            alert.severityColor === "orange" ? "bg-amber-500/20 text-amber-400" :
+                            "bg-yellow-500/20 text-yellow-400"
+                          }`}>
+                            {alert.severity}
                           </span>
-                          <button
-                            onClick={() => resolveSos(alert.id)}
-                            className="px-3 py-1.5 rounded bg-green-600 hover:bg-green-700 text-xs font-bold text-white transition-colors"
-                          >
-                            Resolve Case
-                          </button>
                         </div>
-                      )}
+                        <span className="text-[10px] text-slate-500 font-medium flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {alert.source}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-400 leading-relaxed">{alert.message}</p>
+                      <div className="flex items-center justify-between text-[10px] text-slate-500">
+                        <span className="flex items-center gap-1">
+                          <MapPin className="h-3 w-3" /> {alert.area}
+                        </span>
+                        {alert.effectiveEnd && <span>Valid until: {alert.effectiveEnd}</span>}
+                      </div>
                     </div>
-                  </div>
-                ))
+                  ))}
+
+                  {/* USGS Earthquakes */}
+                  {earthquakes.map((eq, i) => (
+                    <div key={`eq-${i}`} className="glass-card p-5 border-slate-800 space-y-3">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">🌍</span>
+                          <h4 className="font-bold text-white text-sm">
+                            M{eq.magnitude.toFixed(1)} — {eq.place}
+                          </h4>
+                          <span className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase ${
+                            eq.magnitude >= 5 ? "bg-red-500/20 text-red-400" :
+                            eq.magnitude >= 4 ? "bg-amber-500/20 text-amber-400" :
+                            "bg-slate-700 text-slate-300"
+                          }`}>
+                            M{eq.magnitude.toFixed(1)}
+                          </span>
+                        </div>
+                        <span className="text-[10px] text-slate-500 font-medium flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {timeAgo(eq.time)}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-[10px] text-slate-500">
+                        <span>Depth: {eq.depth.toFixed(1)} km</span>
+                        {eq.url && (
+                          <a href={eq.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-cyan-400 hover:text-cyan-300">
+                            USGS Details <ExternalLink className="h-3 w-3" />
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </>
               )}
             </div>
           ) : (
+            /* Emergency Contacts — Real public numbers from NDMA/Govt */
             <div className="space-y-2">
-              {REFERENCE_VOLUNTEERS.map((v) => (
-                <div key={v.id} className="p-4 rounded-xl bg-slate-900/60 border border-slate-850 flex items-center justify-between">
-                  <div>
-                    <span className="block font-bold text-white text-sm">{v.name}</span>
-                    <span className="block text-xs text-slate-400 mt-0.5">Skills: {v.skills.join(", ")}</span>
+              <div className="glass-card p-3 border-slate-800 bg-blue-500/5">
+                <p className="text-[10px] text-blue-300 flex items-center gap-1.5">
+                  <Phone className="h-3 w-3" />
+                  Emergency contact numbers sourced from official NDMA, Government of India, and IRDAI public directories.
+                </p>
+              </div>
+              {EMERGENCY_CONTACTS.map((contact) => (
+                <a
+                  key={contact.phone}
+                  href={`tel:${contact.phone}`}
+                  className="block p-4 rounded-xl bg-slate-900/60 border border-slate-850 hover:border-slate-700 transition-colors"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="h-9 w-9 rounded-lg bg-slate-800 flex items-center justify-center">
+                        <Phone className="h-4 w-4 text-cyan-400" />
+                      </div>
+                      <div>
+                        <span className="block font-bold text-white text-sm">{contact.name}</span>
+                        <span className="block text-[11px] text-slate-400">{contact.role}</span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className="block text-sm font-bold text-cyan-400">{contact.phone}</span>
+                      <span className="block text-[9px] text-slate-600">Source: {contact.source}</span>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                      v.available ? "bg-green-500/10 text-green-400 border border-green-500/20" : "bg-slate-800 text-slate-500"
-                    }`}>
-                      {v.available ? "Available" : "Deployed"}
-                    </span>
-                    <span className="block text-[9px] text-slate-500 mt-1">Distance: {v.distance}</span>
-                  </div>
-                </div>
+                </a>
               ))}
             </div>
           )}
         </div>
 
-        {/* Resource inventory allocation */}
+        {/* Side panel — Real-time environmental data */}
         <div className="glass-card p-5 border-slate-800 space-y-4">
           <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">
-            Catchment Resource Ledger
+            Live Environmental Status
           </h3>
-          <p className="text-xs text-slate-500">Live inventories at central SDRF Pune warehouse</p>
+          <p className="text-[10px] text-slate-500">Real-time data from Open-Meteo, NDMA SACHET, USGS</p>
 
-          <div className="space-y-3">
-            {[
-              { item: "Inflatable Power Boats", stock: 12, unit: "units", fill: 75 },
-              { item: "Purified Water Boxes", stock: 1200, unit: "boxes", fill: 40 },
-              { item: "Emergency Food Packets", stock: 2400, unit: "meals", fill: 60 },
-              { item: "Dengue Medicine Vials", stock: 450, unit: "vials", fill: 90 },
-            ].map((inv) => (
-              <div key={inv.item} className="space-y-1">
-                <div className="flex justify-between text-xs font-semibold">
-                  <span className="text-slate-300">{inv.item}</span>
-                  <span className="text-white">{inv.stock} {inv.unit}</span>
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-5 w-5 animate-spin text-cyan-400" />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* Weather summary */}
+              {weather && (
+                <div className="p-3 rounded-lg bg-slate-900/60 border border-slate-850 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-white">Current Weather</span>
+                    <span className="text-lg">{WMO_EMOJI[weather.conditionCode] || "🌧️"}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-[10px]">
+                    <div>
+                      <span className="text-slate-500">Temp</span>
+                      <span className="block text-white font-bold">{weather.temp}°C</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500">Rain</span>
+                      <span className="block text-white font-bold">{weather.rainfallMm} mm</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500">Wind</span>
+                      <span className="block text-white font-bold">{weather.windSpeed} km/h</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500">Humidity</span>
+                      <span className="block text-white font-bold">{weather.humidity}%</span>
+                    </div>
+                  </div>
+                  <span className="block text-[9px] text-slate-600">Source: {weather.source}</span>
                 </div>
-                <div className="h-1.5 rounded-full bg-slate-850 overflow-hidden">
-                  <div className="h-full bg-cyan-400" style={{ width: `${inv.fill}%` }} />
-                </div>
-              </div>
-            ))}
-          </div>
+              )}
 
-          <button
-            onClick={() => alert("Requisitions sent to Central disaster relief storage.")}
-            className="w-full mt-4 py-2.5 rounded-lg bg-slate-850 hover:bg-slate-800 text-xs font-semibold text-slate-200 border border-slate-750 transition-colors"
-          >
-            Requisition More Assets
-          </button>
+              {/* Flood data */}
+              {flood && flood.currentLevel != null && (
+                <div className="p-3 rounded-lg bg-slate-900/60 border border-slate-850 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-white">River Discharge</span>
+                    <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${
+                      flood.trend === "rising" ? "bg-red-500/20 text-red-400" :
+                      flood.trend === "falling" ? "bg-green-500/20 text-green-400" :
+                      "bg-slate-700 text-slate-400"
+                    }`}>
+                      {flood.trend}
+                    </span>
+                  </div>
+                  <div className="space-y-1 text-[10px]">
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Current</span>
+                      <span className="text-white font-bold">{flood.currentLevel} {flood.unit}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Danger Threshold</span>
+                      <span className="text-amber-400 font-bold">{flood.dangerThreshold} {flood.unit}</span>
+                    </div>
+                  </div>
+                  <span className="block text-[9px] text-slate-600">Source: {flood.source}</span>
+                </div>
+              )}
+
+              {/* Quick action */}
+              <a
+                href="tel:112"
+                className="block w-full py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold text-center transition-colors"
+              >
+                📞 Call 112 — National Emergency
+              </a>
+              <a
+                href="tel:1078"
+                className="block w-full py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold text-center border border-slate-700 transition-colors"
+              >
+                📞 Call 1078 — Flood Helpline
+              </a>
+            </div>
+          )}
         </div>
       </div>
     </div>
