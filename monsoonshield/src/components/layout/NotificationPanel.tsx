@@ -15,7 +15,12 @@ interface NotificationPanelProps {
 export default function NotificationPanel({ isOpen, onClose, onNavigate }: NotificationPanelProps) {
   const { notifications, unreadCount, markAsRead, markAllRead } = useAuth();
   const [filter, setFilter] = useState<"all" | "unread">("all");
-  const nowRef = useRef(Date.now());
+  const [now, setNow] = useState(0);
+
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setNow(Date.now()));
+    return () => cancelAnimationFrame(id);
+  }, []);
 
   if (!isOpen) return null;
 
@@ -41,7 +46,7 @@ export default function NotificationPanel({ isOpen, onClose, onNavigate }: Notif
   };
 
   const formatTime = (date: Date) => {
-    const diff = nowRef.current - date.getTime();
+    const diff = now - date.getTime();
     const mins = Math.floor(diff / 60000);
     if (mins < 1) return "Just now";
     if (mins < 60) return `${mins}m ago`;
