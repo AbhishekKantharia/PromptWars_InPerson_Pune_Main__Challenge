@@ -77,56 +77,34 @@ const DEFAULT_USER: UserProfile = {
 const INITIAL_NOTIFICATIONS: Notification[] = [
   {
     id: "n1",
-    type: "alert",
-    title: "IMD Orange Alert — Pune",
-    message: "Heavy rainfall expected (64.5-115.5mm) in Pune district. Avoid low-lying areas.",
-    severity: "high",
-    timestamp: new Date(Date.now() - 15 * 60000),
-    read: false,
-    actionLabel: "View Dashboard",
-    actionTab: "dashboard",
-  },
-  {
-    id: "n2",
-    type: "alert",
-    title: "Mula River Rising — DANGER",
-    message: "Mula river at 82% danger level. Residents near riverbanks should evacuate.",
-    severity: "critical",
-    timestamp: new Date(Date.now() - 8 * 60000),
-    read: false,
-    actionLabel: "Find Shelters",
-    actionTab: "shelters",
-  },
-  {
-    id: "n3",
-    type: "community",
-    title: "Community Report Verified",
-    message: "NH48 waterlogging report confirmed by 12 citizens. Road impassable.",
-    severity: "medium",
-    timestamp: new Date(Date.now() - 45 * 60000),
-    read: false,
-    actionLabel: "View Reports",
-    actionTab: "reports",
-  },
-  {
-    id: "n4",
     type: "system",
-    title: "Varsha AI Briefing Ready",
-    message: "Your daily monsoon briefing has been generated. Check your dashboard.",
+    title: "MonsoonShield Active",
+    message: "Real-time alerts and weather data are now active. Check your dashboard for live updates.",
     severity: "low",
-    timestamp: new Date(Date.now() - 120 * 60000),
-    read: true,
+    timestamp: new Date(Date.now() - 5 * 60000),
+    read: false,
     actionLabel: "Open Dashboard",
     actionTab: "dashboard",
   },
   {
-    id: "n5",
+    id: "n2",
+    type: "system",
+    title: "Varsha AI Ready",
+    message: "Your AI monsoon assistant is online with live NDMA and IMD data. Ask me anything!",
+    severity: "low",
+    timestamp: new Date(Date.now() - 30 * 60000),
+    read: false,
+    actionLabel: "Chat with Varsha",
+    actionTab: "chat",
+  },
+  {
+    id: "n3",
     type: "family",
     title: "Family Check-In Reminder",
-    message: "2 family members haven't checked in today. Send a safety reminder.",
+    message: "Use the Family tab to check in with your household members during monsoon season.",
     severity: "medium",
-    timestamp: new Date(Date.now() - 180 * 60000),
-    read: false,
+    timestamp: new Date(Date.now() - 120 * 60000),
+    read: true,
     actionLabel: "Family Safety",
     actionTab: "family",
   },
@@ -164,12 +142,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setLoginStep("done");
         }
       } catch {
-        // If decryption fails, clear corrupted data
         localStorage.removeItem("ms_user_enc");
         localStorage.removeItem("ms_user");
       }
     };
     loadUser();
+  }, []);
+
+  // Fetch real alerts from NDMA and convert to notifications
+  useEffect(() => {
+    fetch("/api/alerts")
+      .then(r => r.json())
+      .then((data) => {
+        if (!Array.isArray(data)) return;
+        const alertNotifications: Notification[] = data.slice(0, 5).map((a: Record<string, string>) => ({
+          id: `ndma-${a.id || Date.now()}-${Math.random()}`,
+          type: "alert" as const,
+          title: `${a.disasterType} — ${a.area}`,
+          message: a.message || a.severity || "No details",
+          severity: (a.severityColor === "red" ? "critical" : a.severityColor === "orange" ? "high" : "medium") as "critical" | "high" | "medium",
+          timestamp: new Date(),
+          read: false,
+          actionLabel: "View Dashboard",
+          actionTab: "dashboard",
+        }));
+        if (alertNotifications.length > 0) {
+          setNotifications(prev => {
+            const existing = new Set(prev.map(n => n.title));
+            const newAlerts = alertNotifications.filter(n => !existing.has(n.title));
+            return [...newAlerts, ...prev].slice(0, 50);
+          });
+        }
+      })
+      .catch(() => {});
   }, []);
 
   // Sanitize phone number input

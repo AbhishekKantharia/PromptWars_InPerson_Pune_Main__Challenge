@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { Send, Sparkles, Mic, Volume2, Info, Loader2, Trash2 } from "lucide-react";
 import { sendMessage, ChatMessage } from "@/lib/gemini";
 import { useAuth } from "@/lib/AuthContext";
+import type { RealWeather } from "@/lib/realData";
 
 interface ChatScreenProps {
   language: string;
@@ -58,7 +59,24 @@ I can help you with:
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [ttsEnabled, setTtsEnabled] = useState(false);
+  const [riskScore, setRiskScore] = useState(50);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Fetch weather on mount to compute dynamic risk score
+  useEffect(() => {
+    fetch("/api/weather")
+      .then(r => r.json())
+      .then((data: RealWeather) => {
+        if (!data.error && "rainfallMm" in data) {
+          const rainfallScore = Math.min(40, (data.rainfallMm / 100) * 40);
+          const windScore = Math.min(20, (data.windSpeed / 100) * 20);
+          const humidityScore = data.humidity > 90 ? 15 : data.humidity > 75 ? 8 : 0;
+          const score = Math.round(rainfallScore + windScore + humidityScore + 10);
+          setRiskScore(Math.max(10, Math.min(95, score)));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -84,7 +102,7 @@ I can help you with:
     try {
       const responseText = await sendMessage(text, [...messages, userMsg], {
         location: user?.location || "Pune, Maharashtra",
-        riskScore: 58,
+        riskScore: riskScore,
         language: language,
         familySize: user?.familySize,
         hasChildren: user?.hasChildren,

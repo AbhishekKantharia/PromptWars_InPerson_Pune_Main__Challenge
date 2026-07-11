@@ -51,7 +51,7 @@ function getAlertTypeIcon(type: string): string {
 
 export default function DashboardScreen({ setActiveTab, language }: DashboardScreenProps) {
   const { user } = useAuth();
-  const [riskScore] = useState(58);
+  const [riskScore, setRiskScore] = useState(50);
   const [briefing, setBriefing] = useState("");
   const [isGeneratingBriefing, setIsGeneratingBriefing] = useState(false);
   const [, startTransition] = useTransition();
@@ -81,6 +81,18 @@ export default function DashboardScreen({ setActiveTab, language }: DashboardScr
       .finally(() => setAlertsLoading(false));
   }, []);
 
+  // Compute dynamic risk score from real weather data
+  useEffect(() => {
+    if (weather) {
+      const rainfallScore = Math.min(40, (weather.rainfallMm / 100) * 40);
+      const windScore = Math.min(20, (weather.windSpeed / 100) * 20);
+      const humidityScore = weather.humidity > 90 ? 15 : weather.humidity > 75 ? 8 : 0;
+      const alertScore = Math.min(25, alerts.length * 5);
+      const score = Math.round(rainfallScore + windScore + humidityScore + alertScore);
+      setRiskScore(Math.max(10, Math.min(95, score)));
+    }
+  }, [weather, alerts]);
+
   const generateAIBriefing = useCallback(() => {
     startTransition(async () => {
       setIsGeneratingBriefing(true);
@@ -88,6 +100,8 @@ export default function DashboardScreen({ setActiveTab, language }: DashboardScr
         const result = await generateBriefing({
           location: user?.location || "Pune, Maharashtra",
           language: language,
+          lat: String(user?.location?.includes(",") ? "" : "18.52"),
+          lng: String(user?.location?.includes(",") ? "" : "73.86"),
         });
         setBriefing(result);
       } catch {

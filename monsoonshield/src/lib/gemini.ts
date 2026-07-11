@@ -43,6 +43,8 @@ export async function sendMessage(
 export async function generateBriefing(context?: {
   location?: string;
   language?: string;
+  lat?: string;
+  lng?: string;
 }): Promise<string> {
   try {
     const res = await fetch("/api/briefing", {

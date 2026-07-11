@@ -1,20 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Sparkles, CheckCircle2, Circle, ListTodo } from "lucide-react";
 import { generatePreparednessplan } from "@/lib/gemini";
+import { useAuth } from "@/lib/AuthContext";
 
 export default function PrepareScreen() {
-  const [profile, setProfile] = useState<{
-    location: string;
-    familySize: number;
-    hasChildren: boolean;
-    hasElderly: boolean;
-    hasMedicalConditions: boolean;
-    homeType: string;
-    hasVehicle: boolean;
-    floodRiskScore: number;
-  }>({
+  const { user } = useAuth();
+  const [profile, setProfile] = useState({
     location: "Pune, Maharashtra",
     familySize: 4,
     hasChildren: true,
@@ -22,8 +15,31 @@ export default function PrepareScreen() {
     hasMedicalConditions: true,
     homeType: "ground_floor",
     hasVehicle: true,
-    floodRiskScore: 58,
+    floodRiskScore: 50,
   });
+
+  // Fetch real weather data to compute dynamic risk score
+  useEffect(() => {
+    fetch("/api/weather")
+      .then(r => r.json())
+      .then(data => {
+        if (!data.error && "rainfallMm" in data) {
+          const rainfallScore = Math.min(40, (data.rainfallMm / 100) * 40);
+          const windScore = Math.min(20, (data.windSpeed / 100) * 20);
+          const humidityScore = data.humidity > 90 ? 15 : data.humidity > 75 ? 8 : 0;
+          const score = Math.round(rainfallScore + windScore + humidityScore + 10);
+          setProfile(p => ({ ...p, floodRiskScore: Math.max(10, Math.min(95, score)) }));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // Update location from user profile
+  useEffect(() => {
+    if (user?.location) {
+      setProfile(p => ({ ...p, location: user.location }));
+    }
+  }, [user?.location]);
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [activeTab, setActiveTab] = useState<"checklist" | "plan">("checklist");

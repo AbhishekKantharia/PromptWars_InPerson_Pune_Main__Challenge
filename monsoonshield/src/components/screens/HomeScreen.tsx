@@ -1,8 +1,9 @@
 "use client";
 
-import { Sparkles, AlertTriangle, ArrowRight } from "lucide-react";
-import { MOCK_ALERTS } from "@/lib/mockData";
+import { useState, useEffect } from "react";
+import { Sparkles, AlertTriangle, ArrowRight, Loader2 } from "lucide-react";
 import { SidebarTab } from "@/components/layout/Sidebar";
+import type { RealAlert } from "@/lib/realData";
 
 interface HomeScreenProps {
   setActiveTab: (tab: SidebarTab) => void;
@@ -17,6 +18,16 @@ const drops = Array.from({ length: 40 }).map((_, i) => ({
 }));
 
 export default function HomeScreen({ setActiveTab }: HomeScreenProps) {
+  const [alerts, setAlerts] = useState<RealAlert[]>([]);
+  const [alertsLoading, setAlertsLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/alerts")
+      .then(r => r.json())
+      .then(data => { if (Array.isArray(data)) setAlerts(data); })
+      .catch(() => {})
+      .finally(() => setAlertsLoading(false));
+  }, []);
 
   return (
     <div className="relative min-h-[calc(100vh-73px)] w-full hero-gradient flex flex-col items-center justify-center p-8 overflow-hidden">
@@ -107,8 +118,8 @@ export default function HomeScreen({ setActiveTab }: HomeScreenProps) {
           </div>
         </div>
 
-        {/* Quick Alert Bar */}
-        {MOCK_ALERTS.length > 0 && (
+        {/* Quick Alert Bar — Real Data */}
+        {!alertsLoading && alerts.length > 0 && (
           <div className="w-full glass-card p-4 flex flex-col md:flex-row items-center justify-between gap-4 text-left border-amber-500/20 bg-amber-500/5">
             <div className="flex items-center gap-3">
               <span className="text-2xl animate-pulse">⚠️</span>
@@ -117,7 +128,7 @@ export default function HomeScreen({ setActiveTab }: HomeScreenProps) {
                   Active Regional Alert
                 </span>
                 <span className="block text-sm font-semibold text-white">
-                  {MOCK_ALERTS[0]?.title} — {MOCK_ALERTS[0]?.area}
+                  {alerts[0]?.disasterType} — {alerts[0]?.area}
                 </span>
               </div>
             </div>
@@ -128,6 +139,18 @@ export default function HomeScreen({ setActiveTab }: HomeScreenProps) {
               <span>View Details</span>
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </button>
+          </div>
+        )}
+        {!alertsLoading && alerts.length === 0 && (
+          <div className="w-full glass-card p-4 flex items-center justify-center gap-2 text-left border-green-500/20 bg-green-500/5">
+            <span className="text-lg">✅</span>
+            <span className="text-sm font-semibold text-green-400">No active disaster alerts in your area</span>
+          </div>
+        )}
+        {alertsLoading && (
+          <div className="w-full glass-card p-4 flex items-center justify-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin text-cyan-400" />
+            <span className="text-xs text-slate-400">Checking live alerts from NDMA...</span>
           </div>
         )}
       </div>

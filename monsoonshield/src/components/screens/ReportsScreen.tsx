@@ -1,12 +1,28 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCircle, Image as ImageIcon, MapPin, Plus, ThumbsUp } from "lucide-react";
-import { MOCK_COMMUNITY_REPORTS } from "@/lib/mockData";
+import { CheckCircle, Image as ImageIcon, MapPin, Plus, ThumbsUp, Loader2 } from "lucide-react";
+
+interface CommunityReport {
+  id: string;
+  type: string;
+  title: string;
+  description: string;
+  reporter: string;
+  lat: number;
+  lng: number;
+  upvotes: number;
+  verified: boolean;
+  timestamp: string;
+  photo: boolean;
+  urgent: boolean;
+}
 
 export default function ReportsScreen() {
-  const [reports, setReports] = useState(MOCK_COMMUNITY_REPORTS);
+  const [reports, setReports] = useState<CommunityReport[]>([]);
   const [showForm, setShowForm] = useState(false);
+  const [gpsLoading, setGpsLoading] = useState(false);
+  const [currentCoords, setCurrentCoords] = useState<{ lat: number; lng: number } | null>(null);
 
   // New report form state
   const [title, setTitle] = useState("");
@@ -20,32 +36,55 @@ export default function ReportsScreen() {
     );
   };
 
+  const acquireGps = () => {
+    setGpsLoading(true);
+    if (!navigator.geolocation) {
+      setCurrentCoords({ lat: 18.5204, lng: 73.8567 });
+      setGpsLoading(false);
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setCurrentCoords({
+          lat: Math.round(pos.coords.latitude * 10000) / 10000,
+          lng: Math.round(pos.coords.longitude * 10000) / 10000,
+        });
+        setGpsLoading(false);
+      },
+      () => {
+        setCurrentCoords({ lat: 18.5204, lng: 73.8567 });
+        setGpsLoading(false);
+      },
+      { timeout: 8000 }
+    );
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !description.trim()) return;
 
-    const newReport = {
+    const newReport: CommunityReport = {
       id: `rep-${Date.now()}`,
       type: category,
       title,
       description,
       reporter: reporter || "Anonymous",
-      lat: 18.5204 + (Math.random() - 0.5) * 0.05,
-      lng: 73.8567 + (Math.random() - 0.5) * 0.05,
+      lat: currentCoords?.lat ?? 18.5204,
+      lng: currentCoords?.lng ?? 73.8567,
       upvotes: 1,
       verified: false,
       timestamp: "Just now",
-      photo: true,
+      photo: false,
       urgent: category === "need_help",
     };
 
     setReports([newReport, ...reports]);
     setShowForm(false);
-    // Reset form
     setTitle("");
     setCategory("road_blocked");
     setDescription("");
     setReporter("");
+    setCurrentCoords(null);
   };
 
   const getCategoryLabel = (type: string) => {
@@ -155,13 +194,20 @@ export default function ReportsScreen() {
                     type="button"
                     className="flex-1 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-300 border border-slate-750 flex items-center justify-center gap-1 transition-colors"
                   >
-                    <ImageIcon className="h-4 w-4" /> Add Photo (AI Analyzed)
+                    <ImageIcon className="h-4 w-4" /> Add Photo
                   </button>
                   <button
                     type="button"
+                    onClick={acquireGps}
                     className="flex-1 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-300 border border-slate-750 flex items-center justify-center gap-1 transition-colors"
                   >
-                    <MapPin className="h-4 w-4" /> Tag Current GPS
+                    {gpsLoading ? (
+                      <><Loader2 className="h-4 w-4 animate-spin" /> Acquiring GPS...</>
+                    ) : currentCoords ? (
+                      <><MapPin className="h-4 w-4 text-green-400" /> GPS: {currentCoords.lat}, {currentCoords.lng}</>
+                    ) : (
+                      <><MapPin className="h-4 w-4" /> Tag Current GPS</>
+                    )}
                   </button>
                 </div>
               </div>
