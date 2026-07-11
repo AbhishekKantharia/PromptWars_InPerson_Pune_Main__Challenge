@@ -1,23 +1,23 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Shield, Phone, Lock, User, ChevronRight, CheckCircle2, MapPin, Users, Home, Baby, Heart, Car, Globe } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { UserProfile } from "@/lib/AuthContext";
 import { LANGUAGES } from "@/lib/utils";
+
+const raindrops = Array.from({ length: 20 }).map((_, i) => ({
+  id: i,
+  left: `${Math.random() * 100}%`,
+  duration: `${1 + Math.random() * 2}s`,
+  delay: `${Math.random() * 3}s`,
+}));
 
 export default function LoginScreen() {
   const auth = useAuth();
   const [error, setError] = useState("");
   const [otpTimer, setOtpTimer] = useState(0);
   const [showOtpDemo, setShowOtpDemo] = useState(false);
-
-  const raindrops = useMemo(() => Array.from({ length: 20 }).map((_, i) => ({
-    id: i,
-    left: `${Math.random() * 100}%`,
-    duration: `${1 + Math.random() * 2}s`,
-    delay: `${Math.random() * 3}s`,
-  })), []);
 
   useEffect(() => {
     if (otpTimer <= 0) return;

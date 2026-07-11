@@ -1,6 +1,5 @@
 "use client";
 
-import { useMemo } from "react";
 import { Sparkles, AlertTriangle, ArrowRight } from "lucide-react";
 import { MOCK_ALERTS } from "@/lib/mockData";
 import { SidebarTab } from "@/components/layout/Sidebar";
@@ -10,13 +9,14 @@ interface HomeScreenProps {
   setShowEmergencyModal: (show: boolean) => void;
 }
 
+const drops = Array.from({ length: 40 }).map((_, i) => ({
+  id: i,
+  left: `${Math.random() * 100}%`,
+  delay: `${Math.random() * 5}s`,
+  duration: `${1.5 + Math.random() * 1.5}s`,
+}));
+
 export default function HomeScreen({ setActiveTab }: HomeScreenProps) {
-  const drops = useMemo(() => Array.from({ length: 40 }).map((_, i) => ({
-    id: i,
-    left: `${Math.random() * 100}%`,
-    delay: `${Math.random() * 5}s`,
-    duration: `${1.5 + Math.random() * 1.5}s`,
-  })), []);
 
   return (
     <div className="relative min-h-[calc(100vh-73px)] w-full hero-gradient flex flex-col items-center justify-center p-8 overflow-hidden">
