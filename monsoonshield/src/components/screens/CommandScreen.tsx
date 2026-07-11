@@ -2,7 +2,13 @@
 
 import { useState } from "react";
 import { Play } from "lucide-react";
-import { MOCK_VOLUNTEERS } from "@/lib/mockData";
+
+const REFERENCE_VOLUNTEERS = [
+  { id: "v1", name: "SDRF Unit Alpha", skills: ["Water Rescue", "Boat Operations"], available: true, distance: "2.1 km" },
+  { id: "v2", name: "NDRF Team 4", skills: ["Flood Rescue", "Medical First Aid"], available: false, distance: "5.4 km" },
+  { id: "v3", name: "Red Cross Pune", skills: ["Medical", "Shelter Management"], available: true, distance: "3.8 km" },
+  { id: "v4", name: "Local Volunteer Cell", skills: ["Coordination", "Supply Distribution"], available: true, distance: "1.2 km" },
+];
 
 export default function CommandScreen() {
   const [sosAlerts, setSosAlerts] = useState([
@@ -159,7 +165,7 @@ export default function CommandScreen() {
             </div>
           ) : (
             <div className="space-y-2">
-              {MOCK_VOLUNTEERS.map((v) => (
+              {REFERENCE_VOLUNTEERS.map((v) => (
                 <div key={v.id} className="p-4 rounded-xl bg-slate-900/60 border border-slate-850 flex items-center justify-between">
                   <div>
                     <span className="block font-bold text-white text-sm">{v.name}</span>
