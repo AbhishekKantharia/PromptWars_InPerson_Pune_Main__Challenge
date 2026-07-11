@@ -24,29 +24,35 @@ interface DashboardScreenProps {
 }
 
 export default function DashboardScreen({ setActiveTab, language }: DashboardScreenProps) {
-  const [riskScore, setRiskScore] = useState(58); // Pune default simulated risk
+  const { user } = useAuth();
+  const [riskScore, setRiskScore] = useState(58);
   const [briefing, setBriefing] = useState("");
   const [isGeneratingBriefing, setIsGeneratingBriefing] = useState(false);
 
   useEffect(() => {
-    // Generate AI daily briefing
-    generateMockBriefing();
+    generateAIBriefing();
   }, [language]);
 
-  const generateMockBriefing = () => {
+  const generateAIBriefing = async () => {
     setIsGeneratingBriefing(true);
-    setTimeout(() => {
+    try {
+      const result = await generateBriefing({
+        location: user?.location || "Pune, Maharashtra",
+        riskScore: riskScore,
+        weather: `${MOCK_WEATHER.current.condition}, ${MOCK_WEATHER.current.temp}°C`,
+        alerts: MOCK_ALERTS.map((a) => a.title),
+        language: language,
+      });
+      setBriefing(result);
+    } catch {
       if (language === "hi") {
-        setBriefing(
-          "नमस्ते! आज पुणे में भारी बारिश की चेतावनी (ऑरेंज अलर्ट) जारी की गई है। अगले २४ घंटों में ६८ मिमी वर्षा होने की संभावना है। मूला नदी का जल स्तर सामान्य से १.२ मीटर ऊपर है। आपके स्वास्थ्य के लिए, क्षेत्र में डेंगू के मामलों में वृद्धि को देखते हुए अपने घर के पास जमे हुए पानी को साफ करें। आपातकालीन किट तैयार रखें और यात्रा करने से बचें।"
-        );
+        setBriefing("नमस्ते! आज पुणे में भारी बारिश की चेतावनी (ऑरेंज अलर्ट) जारी की गई है। अगले २४ घंटों में ६८ मिमी वर्षा होने की संभावना है। मूला नदी का जल स्तर सामान्य से १.२ मीटर ऊपर है। आपातकालीन किट तैयार रखें और यात्रा करने से बचें।");
       } else {
-        setBriefing(
-          "Welcome! Today in Pune, an Orange Alert is active with heavy rainfall forecast. 68mm rain expected in the next 24 hours. The Mula river water level is currently 1.2m above normal. Regarding public health, dengue cases have surged in Wards 3 & 5 — eliminate standing water near your house. Prepare your emergency kit and delay unnecessary travel."
-        );
+        setBriefing("Welcome! Today in Pune, an Orange Alert is active with heavy rainfall forecast. 68mm rain expected in the next 24 hours. The Mula river is at 1.2m above normal. Dengue cases have surged in Wards 3 & 5 — eliminate standing water. Prepare your emergency kit and delay unnecessary travel.");
       }
+    } finally {
       setIsGeneratingBriefing(false);
-    }, 1200);
+    }
   };
 
   return (
@@ -184,7 +190,7 @@ export default function DashboardScreen({ setActiveTab, language }: DashboardScr
 
           <div className="flex items-center gap-2 border-t border-slate-800/80 pt-4 mt-6">
             <button
-              onClick={generateMockBriefing}
+              onClick={generateAIBriefing}
               className="text-xs font-semibold text-cyan-400 hover:text-cyan-300 transition-colors"
             >
               🔄 Refresh Briefing
