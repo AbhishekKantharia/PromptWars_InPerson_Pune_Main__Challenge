@@ -155,8 +155,7 @@ While help is on the way:
 I'm here. Tell me when you're safe.
 
 📞 Emergency: 112 (National) | 1078 (Flood Helpline)
-*If you have the MonsoonShield app, tap the red SOS button on the Emergency screen for immediate NDRF dispatch.*
-⚠️ Demo mode — for live AI guidance, enable the backend.`;
+*If you have the MonsoonShield app, tap the red SOS button on the Emergency screen for immediate NDRF dispatch.*`;
   }
 
   if (lower.includes("flood") || lower.includes("बाढ़") || lower.includes("paani") || lower.includes("water level")) {
@@ -190,7 +189,7 @@ Based on current IMD alerts for ${context?.location || "your area"}, here's your
 
 **Source:** NDMA Flood Safety Guidelines | IMD Protocol
 *Confidence: High — based on standard flood safety protocols*
-⚠️ Demo mode — for live AI guidance, enable the backend.`;
+*Note: This is a local fallback response. For live AI guidance, the Varsha AI backend may be temporarily unavailable.*`;
   }
 
   if (lower.includes("shelter") || lower.includes("आश्रय") || lower.includes("where to go") || lower.includes("evacuate")) {
@@ -213,8 +212,7 @@ I don't have live shelter data via public APIs, but here's how to find one:
 • Important documents in waterproof bag
 
 📞 Emergency: 112 | Flood Helpline: 1078
-*Source: NDMA Guidelines*
-⚠️ Demo mode — for live shelter data, enable the backend.`;
+*Source: NDMA Guidelines*`;
   }
 
   if (lower.includes("health") || lower.includes("disease") || lower.includes("mosquito") || lower.includes("dengue") || lower.includes("malaria") || lower.includes("बीमारी")) {
@@ -233,8 +231,7 @@ Disease risk is elevated during monsoon season.
 - National Health Helpline: 104
 - Ambulance: 108
 
-**Source:** MOHFW Monsoon Health Guidelines | WHO India
-⚠️ Demo mode — for live AI guidance, enable the backend.`;
+**Source:** MOHFW Monsoon Health Guidelines | WHO India`;
   }
 
   if (lower.includes("prepare") || lower.includes("checklist") || lower.includes("तैयारी") || lower.includes("kit") || lower.includes("what to do")) {
@@ -256,8 +253,7 @@ Disease risk is elevated during monsoon season.
 • Monitor local river and water levels
 • Report hazards via Community Reports
 
-*Source: NDMA Preparedness Guidelines*
-⚠️ Demo mode — for live AI guidance, enable the backend.`;
+*Source: NDMA Preparedness Guidelines*`;
   }
 
   if (lower.includes("scheme") || lower.includes("government") || lower.includes("compensation") || lower.includes("relief") || lower.includes("insurance")) {
@@ -276,8 +272,7 @@ Disease risk is elevated during monsoon season.
 - Disaster Helpline: 1070
 - Insurance: 1800-11-0001 (IRDAI)
 
-*Source: Ministry of Home Affairs, NDMA*
-⚠️ Demo mode — for live AI guidance, enable the backend.`;
+*Source: Ministry of Home Affairs, NDMA*`;
   }
 
   return `👋 **Namaste! I'm Varsha (वर्षा), your MonsoonShield AI assistant.**
