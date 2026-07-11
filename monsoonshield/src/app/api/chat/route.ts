@@ -191,7 +191,7 @@ If asked about shelters, advise the user to: check the MonsoonShield Shelter Fin
         role: msg.role === "assistant" ? "model" as const : "user" as const,
         parts: [{ text: msg.content }],
       }))
-      .filter((entry, index, arr) => {
+      .filter((entry: { role: string; parts: { text: string }[] }, index: number, arr: { role: string; parts: { text: string }[] }[]) => {
         // Gemini requires first message to be from user — skip leading model messages
         if (index === 0 && entry.role === "model") return false;
         // Skip consecutive same-role messages (keep only the last one)
