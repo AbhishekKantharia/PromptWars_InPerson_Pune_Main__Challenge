@@ -3,6 +3,31 @@ import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/ge
 
 const API_KEY = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || "";
 
+// ============================================================
+// RESPONSE CACHE — critical for staying under 20 req/day free tier
+// ============================================================
+
+interface CacheEntry {
+  data: string;
+  expiresAt: number;
+}
+
+const shelterCache = new Map<string, CacheEntry>();
+const CACHE_TTL_MS = 2 * 60 * 60 * 1000; // 2 hours
+
+function getCached(key: string): string | null {
+  const entry = shelterCache.get(key);
+  if (entry && Date.now() < entry.expiresAt) return entry.data;
+  if (entry) shelterCache.delete(key);
+  return null;
+}
+
+function setCache(key: string, data: string) {
+  shelterCache.set(key, { data, expiresAt: Date.now() + CACHE_TTL_MS });
+}
+
+// ============================================================
+
 export async function POST(request: NextRequest) {
   try {
     if (!API_KEY) {
@@ -14,6 +39,13 @@ export async function POST(request: NextRequest) {
 
     if (!location || typeof location !== "string") {
       return NextResponse.json({ error: "Invalid location" }, { status: 400 });
+    }
+
+    // Check cache first
+    const cacheKey = `shelters:${location}`;
+    const cached = getCached(cacheKey);
+    if (cached) {
+      return NextResponse.json({ shelters: cached, cached: true });
     }
 
     const genAI = new GoogleGenerativeAI(API_KEY);
@@ -65,8 +97,9 @@ If no specific data is available, include a note in the response explaining that
         break;
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "";
-        if (msg.includes("503") && attempt < 2) {
-          await new Promise((r) => setTimeout(r, 2000 * (attempt + 1)));
+        if ((msg.includes("503") || msg.includes("429")) && attempt < 2) {
+          const retryMs = msg.includes("429") ? 60000 : 2000 * (attempt + 1);
+          await new Promise((r) => setTimeout(r, retryMs));
           continue;
         }
         throw e;
@@ -74,9 +107,20 @@ If no specific data is available, include a note in the response explaining that
     }
 
     const text = result!.response.text();
+    setCache(cacheKey, text);
+
     return NextResponse.json({ shelters: text });
   } catch (error: unknown) {
-    console.error("API /shelters error:", error instanceof Error ? error.message : error);
+    const errMsg = error instanceof Error ? error.message : String(error);
+    console.error("API /shelters error:", errMsg);
+
+    if (errMsg.includes("429") || errMsg.includes("quota")) {
+      return NextResponse.json(
+        { error: "AI service quota reached. Shelter data temporarily unavailable. Call 1078 for shelter information." },
+        { status: 429 }
+      );
+    }
+
     return NextResponse.json({ error: "Failed to fetch shelter data" }, { status: 500 });
   }
 }

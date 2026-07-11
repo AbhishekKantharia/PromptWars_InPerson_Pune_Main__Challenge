@@ -4,6 +4,22 @@ import { fetchAllRealData } from "@/lib/realData";
 
 const API_KEY = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || "";
 
+// Cache for preparedness plans (keyed by profile params)
+interface CacheEntry { data: string; expiresAt: number; }
+const planCache = new Map<string, CacheEntry>();
+const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+
+function getCachedPlan(key: string): string | null {
+  const entry = planCache.get(key);
+  if (entry && Date.now() < entry.expiresAt) return entry.data;
+  if (entry) planCache.delete(key);
+  return null;
+}
+
+function setPlanCache(key: string, data: string) {
+  planCache.set(key, { data, expiresAt: Date.now() + CACHE_TTL_MS });
+}
+
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 
 function checkRateLimit(ip: string, max = 5, windowMs = 600000): boolean {
