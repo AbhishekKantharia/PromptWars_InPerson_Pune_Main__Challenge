@@ -1,0 +1,275 @@
+/**
+ * VarunAI Test Configuration
+ * Central configuration for all test suites
+ */
+
+const TEST_CONFIG = {
+  // Environment
+  env: process.env.TEST_ENV || 'staging',
+  baseUrl: process.env.API_BASE_URL || 'https://api-staging.varunai.in',
+  websocketUrl: process.env.WS_URL || 'wss://ws-staging.varunai.in',
+
+  // Firebase Test Project
+  firebase: {
+    projectId: 'varunai-staging',
+    apiKey: process.env.FIREBASE_API_KEY,
+    authDomain: 'varunai-staging.firebaseapp.com',
+  },
+
+  // Test User Accounts
+  users: {
+    citizen: {
+      phone: '+919876543210',
+      email: 'test.citizen@varunai-test.com',
+      password: 'Test@Citizen123',
+      language: 'en',
+      profile: {
+        name: 'Priya Sharma',
+        age: 32,
+        gender: 'female',
+        medicalConditions: ['pregnant'],
+        homeType: 'apartment',
+        floor: 1,
+        familySize: 3,
+        hasVehicle: false,
+        hasPet: false,
+        livestockCount: 0,
+        incomeBracket: 'MIG',
+        disabilities: [],
+      },
+    },
+    senior: {
+      phone: '+919876543211',
+      email: 'test.senior@varunai-test.com',
+      password: 'Test@Senior123',
+      language: 'hi',
+      profile: {
+        name: 'Ramesh Patel',
+        age: 72,
+        gender: 'male',
+        medicalConditions: ['diabetes', 'hypertension'],
+        homeType: 'independent_house',
+        floor: 0,
+        familySize: 2,
+        hasVehicle: false,
+        hasPet: true,
+        petTypes: ['dog'],
+        livestockCount: 0,
+        incomeBracket: 'LIG',
+        disabilities: ['mobility'],
+      },
+    },
+    farmer: {
+      phone: '+919876543212',
+      email: 'test.farmer@varunai-test.com',
+      password: 'Test@Farmer123',
+      language: 'mr',
+      profile: {
+        name: 'Suresh Jadhav',
+        age: 45,
+        gender: 'male',
+        medicalConditions: [],
+        homeType: 'kutchha',
+        floor: 0,
+        familySize: 5,
+        hasVehicle: true,
+        vehicleType: 'two_wheeler',
+        hasPet: false,
+        livestockCount: 4,
+        livestockTypes: ['cattle'],
+        incomeBracket: 'BPL',
+        disabilities: [],
+      },
+    },
+    tourist: {
+      phone: '+919876543213',
+      email: 'test.tourist@varunai-test.com',
+      password: 'Test@Tourist123',
+      language: 'en',
+      profile: {
+        name: 'Sarah Johnson',
+        age: 28,
+        gender: 'female',
+        medicalConditions: [],
+        homeType: 'rented',
+        floor: 2,
+        familySize: 1,
+        hasVehicle: false,
+        hasPet: false,
+        livestockCount: 0,
+        incomeBracket: 'HIG',
+        disabilities: [],
+        isTourist: true,
+        homeCity: 'New York',
+      },
+    },
+    official: {
+      phone: '+919876543214',
+      email: 'test.official@varunai-test.com',
+      password: 'Test@Official123',
+      role: 'ndrf_officer',
+      language: 'en',
+    },
+    volunteer: {
+      phone: '+919876543215',
+      email: 'test.volunteer@varunai-test.com',
+      password: 'Test@Volunteer123',
+      role: 'volunteer',
+      language: 'ta',
+      skills: ['first_aid', 'driving'],
+    },
+    child: {
+      phone: '+919876543216',
+      email: 'test.child@varunai-test.com',
+      password: 'Test@Child123',
+      language: 'en',
+      profile: {
+        name: 'Ananya',
+        age: 10,
+        gender: 'female',
+        medicalConditions: [],
+        homeType: 'apartment',
+        floor: 3,
+        familySize: 4,
+        disabilities: [],
+        parentUserId: 'parent_user_id',
+      },
+    },
+    disabled: {
+      phone: '+919876543217',
+      email: 'test.disabled@varunai-test.com',
+      password: 'Test@Disabled123',
+      language: 'bn',
+      profile: {
+        name: 'Amit Das',
+        age: 35,
+        gender: 'male',
+        medicalConditions: [],
+        homeType: 'apartment',
+        floor: 2,
+        familySize: 3,
+        hasVehicle: false,
+        hasPet: false,
+        livestockCount: 0,
+        incomeBracket: 'MIG',
+        disabilities: ['visual'],
+      },
+    },
+  },
+
+  // Test Locations (Real Indian coordinates)
+  locations: {
+    mumbaiFlood: { lat: 19.076, lon: 72.8777, name: 'Mumbai - Flood Prone' },
+    mumbaiSafe: { lat: 19.0596, lon: 72.8295, name: 'Mumbai - Safe Area' },
+    chennai: { lat: 13.0827, lon: 80.2707, name: 'Chennai' },
+    kerala: { lat: 9.9312, lon: 76.2673, name: 'Kerala' },
+    assam: { lat: 26.2006, lon: 92.9376, name: 'Assam' },
+    bihar: { lat: 25.0961, lon: 85.3131, name: 'Bihar - Kosi Belt' },
+    delhi: { lat: 28.7041, lon: 77.1025, name: 'Delhi' },
+    pune: { lat: 18.5204, lon: 73.8567, name: 'Pune' },
+    kolkata: { lat: 22.5726, lon: 88.3639, name: 'Kolkata' },
+    ruralAssam: { lat: 26.7509, lon: 94.2037, name: 'Rural Assam Village' },
+    mountainUttarakhand: { lat: 30.0668, lon: 79.0193, name: 'Uttarakhand Hills' },
+    coastalOdisha: { lat: 20.2961, lon: 85.8245, name: 'Odisha Coast' },
+  },
+
+  // Weather Data Mocks
+  weather: {
+    clear: { condition: 'clear', rainfall: 0, temperature: 32, humidity: 60, windSpeed: 10 },
+    lightRain: { condition: 'light_rain', rainfall: 5, temperature: 28, humidity: 80, windSpeed: 15 },
+    moderateRain: { condition: 'moderate_rain', rainfall: 25, temperature: 25, humidity: 90, windSpeed: 25 },
+    heavyRain: { condition: 'heavy_rain', rainfall: 65, temperature: 23, humidity: 95, windSpeed: 40 },
+    veryHeavyRain: { condition: 'very_heavy_rain', rainfall: 120, temperature: 22, humidity: 98, windSpeed: 55 },
+    extremeRain: { condition: 'extreme_rain', rainfall: 200, temperature: 21, humidity: 99, windSpeed: 70 },
+    cyclone: { condition: 'cyclone', rainfall: 250, temperature: 20, humidity: 99, windSpeed: 120 },
+  },
+
+  // Alert Levels
+  alertLevels: ['watch', 'warning', 'emergency', 'extreme'],
+
+  // Test Timeouts
+  timeouts: {
+    short: 5000,
+    medium: 15000,
+    long: 30000,
+    veryLong: 60000,
+    aiResponse: 10000,
+    pushNotification: 15000,
+    smsDelivery: 30000,
+  },
+
+  // Languages to test
+  languages: [
+    { code: 'en', name: 'English', script: 'Latin' },
+    { code: 'hi', name: 'Hindi', script: 'Devanagari' },
+    { code: 'mr', name: 'Marathi', script: 'Devanagari' },
+    { code: 'ta', name: 'Tamil', script: 'Tamil' },
+    { code: 'bn', name: 'Bengali', script: 'Bengali' },
+    { code: 'te', name: 'Telugu', script: 'Telugu' },
+    { code: 'gu', name: 'Gujarati', script: 'Gujarati' },
+    { code: 'kn', name: 'Kannada', script: 'Kannada' },
+    { code: 'ml', name: 'Malayalam', script: 'Malayalam' },
+    { code: 'pa', name: 'Punjabi', script: 'Gurmukhi' },
+    { code: 'ur', name: 'Urdu', script: 'Arabic' },
+  ],
+
+  // Test Data Seeds
+  shelters: [
+    {
+      shelter_id: 'shelter_mumbai_001',
+      name: 'Bandra Community Hall',
+      location: { lat: 19.0544, lon: 72.8376 },
+      capacity: 500,
+      current_occupancy: 120,
+      facilities: ['beds', 'food', 'water', 'medical', 'toilets'],
+      accessibility: ['wheelchair', 'ramp'],
+      pet_friendly: true,
+      status: 'open',
+    },
+    {
+      shelter_id: 'shelter_mumbai_002',
+      name: 'Andheri Sports Complex',
+      location: { lat: 19.1197, lon: 72.8464 },
+      capacity: 1000,
+      current_occupancy: 450,
+      facilities: ['beds', 'food', 'water', 'medical', 'power_backup'],
+      accessibility: ['wheelchair'],
+      pet_friendly: false,
+      status: 'open',
+    },
+    {
+      shelter_id: 'shelter_mumbai_003',
+      name: 'Dharavi School',
+      location: { lat: 19.0430, lon: 72.8534 },
+      capacity: 300,
+      current_occupancy: 290,
+      facilities: ['food', 'water'],
+      accessibility: [],
+      pet_friendly: false,
+      status: 'open',
+    },
+  ],
+
+  hospitals: [
+    {
+      hospital_id: 'hosp_mumbai_001',
+      name: 'Breach Candy Hospital',
+      location: { lat: 18.9770, lon: 72.7860 },
+      specialties: ['maternity', 'emergency', 'cardiac'],
+      beds_available: 45,
+      power_backup: true,
+      flood_status: 'safe',
+    },
+    {
+      hospital_id: 'hosp_mumbai_002',
+      name: 'Sion Hospital',
+      location: { lat: 19.0433, lon: 72.8620 },
+      specialties: ['general', 'emergency', 'orthopedic'],
+      beds_available: 120,
+      power_backup: true,
+      flood_status: 'safe',
+    },
+  ],
+};
+
+module.exports = TEST_CONFIG;
