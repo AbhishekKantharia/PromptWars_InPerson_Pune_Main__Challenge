@@ -1,14 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
-import {
-  MOCK_ALERTS,
-  MOCK_WEATHER,
-  MOCK_SHELTERS,
-  MOCK_FLOOD_PREDICTION,
-  MOCK_COMMUNITY_REPORTS,
-  MOCK_VOLUNTEERS,
-  RISK_SCORE_FACTORS,
-} from "@/lib/mockData";
+import { fetchAllRealData } from "@/lib/realData";
 
 const API_KEY = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || "";
 
@@ -155,41 +147,14 @@ export async function POST(request: NextRequest) {
       ? `\n\n## USER CONTEXT\n- Location: ${context.location || "India"}\n- Risk Score: ${context.riskScore || "Unknown"}/100\n- Language: ${context.language || "English"}\n- Family: ${context.familySize || "Unknown"} members\n- Children: ${context.hasChildren ? "Yes" : "No"}\n- Elderly: ${context.hasElderly ? "Yes" : "No"}\n- Medical: ${context.hasMedical ? "Yes" : "No"}`
       : "";
 
-    // Build factual data context — inject all available data so the model does NOT hallucinate
-    const factualDataContext = `
-## CURRENT FACTUAL DATA (Use ONLY this data. Do NOT make up any numbers, names, or locations.)
+    // Fetch real-time data from public APIs
+    const realtimeData = await fetchAllRealData(
+      18.52, 73.86,
+      context?.location || "Pune, Maharashtra"
+    );
 
-### Weather (IMD)
-- Temperature: ${MOCK_WEATHER.current.temp}°C (Feels like ${MOCK_WEATHER.current.feelsLike}°C)
-- Condition: ${MOCK_WEATHER.current.condition}
-- Humidity: ${MOCK_WEATHER.current.humidity}%
-- Rainfall (24h): ${MOCK_WEATHER.current.rainfall24h} mm
-- Wind Speed: ${MOCK_WEATHER.current.windSpeed} km/h
-- Visibility: ${MOCK_WEATHER.current.visibility} km
-- IMD Description: ${MOCK_WEATHER.current.description}
-- Hourly Forecast: ${MOCK_WEATHER.hourly.map(h => `${h.time}: ${h.temp}°C, ${h.rain}mm rain`).join(" | ")}
-- 7-Day Forecast: ${MOCK_WEATHER.forecast.map(f => `${f.day}: ${f.condition}, ${f.high}/${f.low}°C, ${f.rain}% rain chance`).join(" | ")}
-
-### Active Alerts
-${MOCK_ALERTS.map(a => `- [${a.severity.toUpperCase()}] ${a.title} (${a.source})\n  Area: ${a.area}\n  Description: ${a.description}\n  Action Required: ${a.actionRequired}\n  Valid Until: ${a.validUntil}`).join("\n")}
-
-### Emergency Shelters
-${MOCK_SHELTERS.map(s => `- ${s.name} (${s.status})\n  Address: ${s.address}\n  Capacity: ${s.currentOccupancy}/${s.capacity} (${Math.round(s.currentOccupancy/s.capacity*100)}% full)\n  Distance: ${s.distanceKm} km\n  Amenities: ${Object.entries(s.amenities).filter(([,v]) => v).map(([k]) => k).join(", ")}\n  Contact: ${s.contact}\n  Managed by: ${s.managedBy}\n  Wheelchair: ${s.wheelchairAccessible ? "Yes" : "No"} | Pet-friendly: ${s.petFriendly ? "Yes" : "No"} | Women's Section: ${s.womensSection ? "Yes" : "No"}`).join("\n")}
-
-### Flood Prediction (Mula River)
-- Danger Threshold: ${MOCK_FLOOD_PREDICTION[0]?.danger ?? 60}%
-- Water Level Trend: ${MOCK_FLOOD_PREDICTION.map(p => `${p.time}: ${p.level}%`).join(" | ")}
-- Peak: ${Math.max(...MOCK_FLOOD_PREDICTION.map(p => p.level))}% at ${MOCK_FLOOD_PREDICTION.reduce((max, p) => p.level > max.level ? p : max, MOCK_FLOOD_PREDICTION[0]!).time}
-
-### Community Reports (Verified)
-${MOCK_COMMUNITY_REPORTS.filter(r => r.verified).map(r => `- ${r.title} (by ${r.reporter}, ${r.upvotes} upvotes)\n  ${r.description}${r.urgent ? " [URGENT]" : ""}`).join("\n")}
-
-### Available Volunteers
-${MOCK_VOLUNTEERS.filter(v => v.available).map(v => `- ${v.name} — Skills: ${v.skills.join(", ")} — Distance: ${v.distance}`).join("\n")}
-
-### Risk Score Factors
-${RISK_SCORE_FACTORS.map(f => `- ${f.label}: ${f.score}/100 (Weight: ${(f.weight*100).toFixed(0)}%)`).join("\n")}
-
+    // Emergency contacts and shelters (no public API available — use reference data)
+    const referenceData = `
 ### Emergency Contacts
 - National Emergency: 112
 - Flood Helpline: 1078
@@ -197,6 +162,10 @@ ${RISK_SCORE_FACTORS.map(f => `- ${f.label}: ${f.score}/100 (Weight: ${(f.weight
 - Health Helpline: 104
 - Disaster Helpline: 1070
 - Insurance (IRDAI): 1800-11-0001
+
+### Note on Shelters & Community Data
+Emergency shelter locations, community reports, and volunteer availability are not available via public APIs.
+If asked about shelters, advise the user to: check the MonsoonShield Shelter Finder tab, call 1078 (Flood Helpline), or contact local district administration.
 `;
 
     // Initialize Gemini (server-side only)
@@ -221,7 +190,7 @@ ${RISK_SCORE_FACTORS.map(f => `- ${f.label}: ${f.score}/100 (Weight: ${(f.weight
       }));
 
     const chat = model.startChat({ history: chatHistory });
-    const result = await chat.sendMessage(factualDataContext + "\n\n## USER MESSAGE\n" + message);
+    const result = await chat.sendMessage(realtimeData + referenceData + "\n\n## USER MESSAGE\n" + message);
     const responseText = result.response.text();
 
     return NextResponse.json({ reply: responseText });

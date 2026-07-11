@@ -6,16 +6,47 @@ import {
   MapPin,
   ChevronRight,
   Zap,
+  Loader2,
 } from "lucide-react";
-import { MOCK_ALERTS, MOCK_WEATHER, RISK_SCORE_FACTORS } from "@/lib/mockData";
-import { getRiskColor, getRiskBgColor, getRiskLabel, getSeverityColor, getAlertIcon } from "@/lib/utils";
+import { getRiskColor, getRiskBgColor, getRiskLabel } from "@/lib/utils";
 import { generateBriefing } from "@/lib/gemini";
 import { useAuth } from "@/lib/AuthContext";
 import { SidebarTab } from "@/components/layout/Sidebar";
+import type { RealWeather, RealAlert } from "@/lib/realData";
 
 interface DashboardScreenProps {
   setActiveTab: (tab: SidebarTab) => void;
   language: string;
+}
+
+const WMO_EMOJI: Record<number, string> = {
+  0: "☀️", 1: "🌤️", 2: "⛅", 3: "☁️",
+  45: "🌫️", 48: "🌫️",
+  51: "🌦️", 53: "🌦️", 55: "🌧️",
+  61: "🌧️", 63: "🌧️", 65: "🌧️",
+  71: "🌨️", 73: "🌨️", 75: "❄️",
+  80: "🌦️", 81: "🌧️", 82: "⛈️",
+  95: "⛈️", 96: "⛈️", 99: "⛈️",
+};
+
+function getSeverityBg(color: string): string {
+  switch (color) {
+    case "red": return "bg-red-50 border-red-200 text-red-900";
+    case "orange": return "bg-orange-50 border-orange-200 text-orange-900";
+    case "yellow": return "bg-yellow-50 border-yellow-200 text-yellow-900";
+    default: return "bg-blue-50 border-blue-200 text-blue-900";
+  }
+}
+
+function getAlertTypeIcon(type: string): string {
+  const t = type.toLowerCase();
+  if (t.includes("rain") || t.includes("flood")) return "🌊";
+  if (t.includes("thunder") || t.includes("lightning")) return "⛈️";
+  if (t.includes("heat")) return "🔥";
+  if (t.includes("cold")) return "🥶";
+  if (t.includes("cyclone")) return "🌀";
+  if (t.includes("landslide")) return "🏔️";
+  return "⚠️";
 }
 
 export default function DashboardScreen({ setActiveTab, language }: DashboardScreenProps) {
@@ -25,29 +56,51 @@ export default function DashboardScreen({ setActiveTab, language }: DashboardScr
   const [isGeneratingBriefing, setIsGeneratingBriefing] = useState(false);
   const [, startTransition] = useTransition();
 
+  const [weather, setWeather] = useState<RealWeather | null>(null);
+  const [weatherLoading, setWeatherLoading] = useState(true);
+  const [alerts, setAlerts] = useState<RealAlert[]>([]);
+  const [alertsLoading, setAlertsLoading] = useState(true);
+
+  // Fetch real weather
+  useEffect(() => {
+    setWeatherLoading(true);
+    fetch("/api/weather")
+      .then((r) => r.json())
+      .then((data) => { if (!data.error) setWeather(data); })
+      .catch(() => {})
+      .finally(() => setWeatherLoading(false));
+  }, []);
+
+  // Fetch real alerts
+  useEffect(() => {
+    setAlertsLoading(true);
+    fetch("/api/alerts")
+      .then((r) => r.json())
+      .then((data) => { if (Array.isArray(data)) setAlerts(data); })
+      .catch(() => {})
+      .finally(() => setAlertsLoading(false));
+  }, []);
+
   const generateAIBriefing = useCallback(() => {
     startTransition(async () => {
       setIsGeneratingBriefing(true);
       try {
         const result = await generateBriefing({
           location: user?.location || "Pune, Maharashtra",
-          riskScore: riskScore,
-          weather: `${MOCK_WEATHER.current.condition}, ${MOCK_WEATHER.current.temp}°C`,
-          alerts: MOCK_ALERTS.map((a) => a.title),
           language: language,
         });
         setBriefing(result);
       } catch {
-        if (language === "hi") {
-          setBriefing("नमस्ते! आज पुणे में भारी बारिश की चेतावनी (ऑरेंज अलर्ट) जारी की गई है। अगले २४ घंटों में ६८ मिमी वर्षा होने की संभावना है। मूला नदी का जल स्तर सामान्य से १.२ मीटर ऊपर है। आपातकालीन किट तैयार रखें और यात्रा करने से बचें।");
-        } else {
-          setBriefing("Welcome! Today in Pune, an Orange Alert is active with heavy rainfall forecast. 68mm rain expected in the next 24 hours. The Mula river is at 1.2m above normal. Dengue cases have surged in Wards 3 & 5 — eliminate standing water. Prepare your emergency kit and delay unnecessary travel.");
-        }
+        setBriefing(
+          language === "hi"
+            ? "ब्रीफिंग लोड करने में विफल। कृपया पुनः प्रयास करें।"
+            : "Failed to load briefing. Please try again."
+        );
       } finally {
         setIsGeneratingBriefing(false);
       }
     });
-  }, [user, riskScore, language]);
+  }, [user, language]);
 
   useEffect(() => {
     generateAIBriefing();
@@ -70,14 +123,13 @@ export default function DashboardScreen({ setActiveTab, language }: DashboardScr
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Risk Score & Profile Widget */}
+        {/* Risk Score */}
         <div className="glass-card p-6 flex flex-col justify-between border-slate-800">
           <div>
             <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">
               Your Household Risk Score
             </h3>
             <div className="flex items-center gap-6 mb-6">
-              {/* Dial/Ring */}
               <div className="relative h-28 w-28 flex items-center justify-center rounded-full border-4 border-slate-800">
                 <div
                   className="absolute inset-0 rounded-full border-4 border-transparent transition-all duration-1000"
@@ -88,36 +140,23 @@ export default function DashboardScreen({ setActiveTab, language }: DashboardScr
                 />
                 <div className="text-center">
                   <span className="block text-3xl font-extrabold text-white">{riskScore}</span>
-                  <span className="block text-[9px] text-slate-500 font-bold tracking-widest uppercase">
-                    Risk Index
-                  </span>
+                  <span className="block text-[9px] text-slate-500 font-bold tracking-widest uppercase">Risk Index</span>
                 </div>
               </div>
-
               <div>
                 <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-bold ${getRiskBgColor(riskScore)} ${getRiskColor(riskScore)}`}>
                   {getRiskLabel(riskScore)} RISK
                 </span>
                 <p className="text-xs text-slate-400 mt-2">
-                  Based on: Ground floor flat, Wakad area, near drainage channel, 68mm rain.
+                  Based on location, home type, and current conditions.
                 </p>
               </div>
             </div>
           </div>
-
-          <div className="border-t border-slate-800/80 pt-4 space-y-3">
-            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wide">Primary Factors:</h4>
-            <div className="space-y-1.5">
-              {RISK_SCORE_FACTORS.slice(0, 3).map((factor) => (
-                <div key={factor.label} className="flex justify-between items-center text-xs">
-                  <span className="text-slate-500">{factor.label}</span>
-                  <span className="font-semibold text-slate-300">{factor.score}/100</span>
-                </div>
-              ))}
-            </div>
+          <div className="border-t border-slate-800/80 pt-4">
             <button
               onClick={() => setActiveTab("prepare")}
-              className="w-full mt-2 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 border border-slate-750 transition-colors flex items-center justify-center gap-1"
+              className="w-full py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 border border-slate-750 transition-colors flex items-center justify-center gap-1"
             >
               <span>Improve Score</span>
               <ChevronRight className="h-3 w-3" />
@@ -125,41 +164,57 @@ export default function DashboardScreen({ setActiveTab, language }: DashboardScr
           </div>
         </div>
 
-        {/* Current Weather Widget */}
+        {/* Weather Widget — Real Data */}
         <div className="glass-card p-6 flex flex-col justify-between border-slate-800 weather-gradient">
           <div>
             <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">
-              Current Weather — IMD
+              Current Weather
             </h3>
-            <div className="flex items-center gap-4">
-              <span className="text-5xl">🌧️</span>
-              <div>
-                <span className="text-3xl font-extrabold text-white">{MOCK_WEATHER.current.temp}°C</span>
-                <span className="block text-sm text-cyan-400 font-semibold">{MOCK_WEATHER.current.condition}</span>
+            {weatherLoading ? (
+              <div className="flex items-center gap-2 text-slate-400">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="text-xs">Fetching live weather...</span>
+              </div>
+            ) : weather ? (
+              <>
+                <div className="flex items-center gap-4">
+                  <span className="text-5xl">{WMO_EMOJI[weather.conditionCode] || "🌧️"}</span>
+                  <div>
+                    <span className="text-3xl font-extrabold text-white">{weather.temp}°C</span>
+                    <span className="block text-sm text-cyan-400 font-semibold">{weather.condition}</span>
+                  </div>
+                </div>
+                <p className="text-xs text-slate-400 mt-4 leading-relaxed">
+                  {weather.description}
+                </p>
+              </>
+            ) : (
+              <p className="text-xs text-slate-500">Weather data unavailable</p>
+            )}
+          </div>
+
+          {weather && (
+            <div className="grid grid-cols-3 gap-2 border-t border-slate-800/85 pt-4 mt-6">
+              <div className="text-center p-2 rounded-lg bg-slate-800/20">
+                <span className="block text-[10px] text-slate-500 font-bold uppercase">Rain</span>
+                <span className="text-sm font-bold text-white">{weather.rainfallMm} mm</span>
+              </div>
+              <div className="text-center p-2 rounded-lg bg-slate-800/20">
+                <span className="block text-[10px] text-slate-500 font-bold uppercase">Humidity</span>
+                <span className="text-sm font-bold text-white">{weather.humidity}%</span>
+              </div>
+              <div className="text-center p-2 rounded-lg bg-slate-800/20">
+                <span className="block text-[10px] text-slate-500 font-bold uppercase">Wind</span>
+                <span className="text-sm font-bold text-white">{weather.windSpeed} km/h</span>
               </div>
             </div>
-            <p className="text-xs text-slate-400 mt-4 leading-relaxed">
-              {MOCK_WEATHER.current.description}
-            </p>
-          </div>
-
-          <div className="grid grid-cols-3 gap-2 border-t border-slate-800/85 pt-4 mt-6">
-            <div className="text-center p-2 rounded-lg bg-slate-800/20">
-              <span className="block text-[10px] text-slate-500 font-bold uppercase">Rain 24h</span>
-              <span className="text-sm font-bold text-white">{MOCK_WEATHER.current.rainfall24h} mm</span>
-            </div>
-            <div className="text-center p-2 rounded-lg bg-slate-800/20">
-              <span className="block text-[10px] text-slate-500 font-bold uppercase">Humidity</span>
-              <span className="text-sm font-bold text-white">{MOCK_WEATHER.current.humidity}%</span>
-            </div>
-            <div className="text-center p-2 rounded-lg bg-slate-800/20">
-              <span className="block text-[10px] text-slate-500 font-bold uppercase">Wind</span>
-              <span className="text-sm font-bold text-white">{MOCK_WEATHER.current.windSpeed} kmh</span>
-            </div>
-          </div>
+          )}
+          {weather && (
+            <p className="text-[9px] text-slate-600 mt-2 text-right">Source: {weather.source}</p>
+          )}
         </div>
 
-        {/* Gemini Daily Briefing Card */}
+        {/* AI Briefing */}
         <div className="glass-card p-6 flex flex-col justify-between border-slate-800">
           <div>
             <div className="flex items-center justify-between mb-4">
@@ -168,7 +223,7 @@ export default function DashboardScreen({ setActiveTab, language }: DashboardScr
                 <span>AI Daily Briefing</span>
               </h3>
               <span className="text-[10px] bg-cyan-500/10 text-cyan-400 px-2 py-0.5 rounded font-bold uppercase tracking-wider">
-                Gemini 2.5
+                Live Data
               </span>
             </div>
 
@@ -204,48 +259,64 @@ export default function DashboardScreen({ setActiveTab, language }: DashboardScr
         </div>
       </div>
 
-      {/* Active Alerts Section */}
+      {/* Active Alerts — Real Data */}
       <div className="glass-card p-6 border-slate-800">
         <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
           <AlertTriangle className="h-5 w-5 text-amber-500" />
-          <span>Active Regional Alerts & Advisories</span>
+          <span>Active Disaster Alerts</span>
+          <span className="text-[10px] bg-green-500/10 text-green-400 px-2 py-0.5 rounded font-bold uppercase ml-auto">
+            NDMA SACHET — Live
+          </span>
         </h3>
-        <div className="space-y-3">
-          {MOCK_ALERTS.map((alert) => (
-            <div
-              key={alert.id}
-              className={`p-4 rounded-xl border flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all duration-200 ${getSeverityColor(
-                alert.severity
-              )}`}
-            >
-              <div className="flex items-start gap-3">
-                <span className="text-2xl mt-0.5">{getAlertIcon(alert.type)}</span>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-slate-900">
-                      {language === "hi" && alert.titleHi ? alert.titleHi : alert.title}
-                    </span>
-                    <span className="text-[10px] bg-slate-900/10 px-2 py-0.5 rounded font-bold uppercase">
-                      {alert.source}
-                    </span>
+        {alertsLoading ? (
+          <div className="flex items-center gap-2 text-slate-400 py-4">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span className="text-xs">Fetching live alerts from NDMA...</span>
+          </div>
+        ) : alerts.length === 0 ? (
+          <p className="text-xs text-slate-500 py-4">No active disaster alerts at this time.</p>
+        ) : (
+          <div className="space-y-3">
+            {alerts.map((alert) => (
+              <div
+                key={alert.id}
+                className={`p-4 rounded-xl border flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all duration-200 ${getSeverityBg(alert.severityColor)}`}
+              >
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl mt-0.5">{getAlertTypeIcon(alert.disasterType)}</span>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold">
+                        {alert.disasterType}
+                      </span>
+                      <span className="text-[10px] bg-slate-900/10 px-2 py-0.5 rounded font-bold uppercase">
+                        {alert.source}
+                      </span>
+                    </div>
+                    <p className="text-xs mt-1 opacity-80">{alert.area}</p>
+                    <p className="text-[11px] font-semibold mt-1 opacity-70 line-clamp-2">
+                      {alert.message}
+                    </p>
                   </div>
-                  <p className="text-xs text-slate-700 mt-1">{alert.description}</p>
-                  <p className="text-[11px] text-slate-800 font-semibold mt-1">
-                    ⚠️ Required Action: {alert.actionRequired}
-                  </p>
+                </div>
+                <div className="text-right flex flex-col items-end gap-1.5 min-w-[120px]">
+                  <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${
+                    alert.severityColor === "red" ? "bg-red-100 text-red-700" :
+                    alert.severityColor === "orange" ? "bg-orange-100 text-orange-700" :
+                    "bg-yellow-100 text-yellow-700"
+                  }`}>
+                    {alert.severity}
+                  </span>
+                  {alert.effectiveEnd && (
+                    <span className="text-[10px] font-medium opacity-60">
+                      Until: {alert.effectiveEnd}
+                    </span>
+                  )}
                 </div>
               </div>
-              <div className="text-right flex flex-col items-end gap-1.5 min-w-[120px]">
-                <span className="text-[10px] font-bold text-slate-600 uppercase">
-                  Area: {alert.area}
-                </span>
-                <span className="text-[10px] font-medium text-slate-600">
-                  Until: {new Date(alert.validUntil).toLocaleTimeString()}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

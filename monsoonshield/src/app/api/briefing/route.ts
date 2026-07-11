@@ -1,11 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
-import {
-  MOCK_ALERTS,
-  MOCK_WEATHER,
-  MOCK_FLOOD_PREDICTION,
-  RISK_SCORE_FACTORS,
-} from "@/lib/mockData";
+import { fetchAllRealData } from "@/lib/realData";
 
 const API_KEY = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || "";
 
@@ -43,6 +38,9 @@ export async function POST(request: NextRequest) {
 
     const lang = language === "hi" ? "Hindi" : "English";
 
+    // Fetch real-time data
+    const realtimeData = await fetchAllRealData(18.52, 73.86, location);
+
     const systemPrompt = `You are Varsha, MonsoonShield's AI monsoon briefing assistant grounded in IMD and NDMA guidelines.
 
 CRITICAL RULES:
@@ -52,35 +50,9 @@ CRITICAL RULES:
 - Be factual, calm, and actionable. Use IMD and NDMA language.
 - Do NOT fabricate tomorrow's forecast beyond what the data shows.`;
 
-    const factualData = `
-## CURRENT FACTUAL DATA (Use ONLY this data)
-
-### Weather (IMD)
-- Temperature: ${MOCK_WEATHER.current.temp}°C (Feels like ${MOCK_WEATHER.current.feelsLike}°C)
-- Condition: ${MOCK_WEATHER.current.condition}
-- Humidity: ${MOCK_WEATHER.current.humidity}%
-- Rainfall (24h): ${MOCK_WEATHER.current.rainfall24h} mm
-- Wind Speed: ${MOCK_WEATHER.current.windSpeed} km/h
-- Visibility: ${MOCK_WEATHER.current.visibility} km
-- IMD Description: ${MOCK_WEATHER.current.description}
-- Hourly Forecast: ${MOCK_WEATHER.hourly.map(h => `${h.time}: ${h.temp}°C, ${h.rain}mm rain`).join(" | ")}
-- 7-Day Forecast: ${MOCK_WEATHER.forecast.map(f => `${f.day}: ${f.condition}, ${f.high}/${f.low}°C, ${f.rain}% rain`).join(" | ")}
-
-### Active Alerts
-${MOCK_ALERTS.map(a => `- [${a.severity.toUpperCase()}] ${a.title} (${a.source})\n  Area: ${a.area}\n  Description: ${a.description}\n  Action Required: ${a.actionRequired}\n  Valid Until: ${a.validUntil}`).join("\n")}
-
-### Flood Prediction (Mula River)
-- Danger Threshold: ${MOCK_FLOOD_PREDICTION[0]?.danger ?? 60}%
-- Water Level Trend: ${MOCK_FLOOD_PREDICTION.map(p => `${p.time}: ${p.level}%`).join(" | ")}
-- Peak: ${Math.max(...MOCK_FLOOD_PREDICTION.map(p => p.level))}% at ${MOCK_FLOOD_PREDICTION.reduce((max, p) => p.level > max.level ? p : max, MOCK_FLOOD_PREDICTION[0]!).time}
-
-### Risk Score Factors
-${RISK_SCORE_FACTORS.map(f => `- ${f.label}: ${f.score}/100 (Weight: ${(f.weight*100).toFixed(0)}%)`).join("\n")}
-`;
-
     const prompt = `Generate a concise daily monsoon briefing for a user in ${location}.
 
-${factualData}
+${realtimeData}
 
 Write a 3-4 sentence briefing in ${lang}:
 1. Current situation summary (based on actual weather data above)
@@ -88,7 +60,8 @@ Write a 3-4 sentence briefing in ${lang}:
 3. One action to take (based on actual alert actionRequired)
 4. Tomorrow's outlook (based on actual 7-day forecast data above)
 
-Use NDMA/IMD language. Be factual, calm, actionable. ONLY cite data that is provided above.`;
+Use NDMA/IMD language. Be factual, calm, actionable. ONLY cite data that is provided above.
+Include the data source attribution (e.g., "Source: Open-Meteo, NDMA SACHET").`;
 
     const genAI = new GoogleGenerativeAI(API_KEY);
     const model = genAI.getGenerativeModel({
