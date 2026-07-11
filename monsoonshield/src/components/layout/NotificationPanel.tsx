@@ -4,10 +4,12 @@ import React, { useState } from "react";
 import { Bell, X, CheckCheck, AlertTriangle, Shield, Users, Info, Heart, ChevronRight } from "lucide-react";
 import { useAuth, Notification } from "@/lib/AuthContext";
 
+import { SidebarTab } from "./Sidebar";
+
 interface NotificationPanelProps {
   isOpen: boolean;
   onClose: () => void;
-  onNavigate?: (tab: string) => void;
+  onNavigate?: (tab: SidebarTab) => void;
 }
 
 export default function NotificationPanel({ isOpen, onClose, onNavigate }: NotificationPanelProps) {
@@ -120,7 +122,7 @@ export default function NotificationPanel({ isOpen, onClose, onNavigate }: Notif
                   onClick={() => {
                     markAsRead(n.id);
                     if (n.actionTab && onNavigate) {
-                      onNavigate(n.actionTab);
+                      onNavigate(n.actionTab as SidebarTab);
                       onClose();
                     }
                   }}
