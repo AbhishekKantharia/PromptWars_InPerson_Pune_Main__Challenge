@@ -171,7 +171,7 @@ If asked about shelters, advise the user to: check the MonsoonShield Shelter Fin
     // Initialize Gemini (server-side only)
     const genAI = new GoogleGenerativeAI(API_KEY);
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash",
+      model: "gemini-3.5-flash",
       systemInstruction: SYSTEM_PROMPT + contextBlock,
       safetySettings: [
         { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
@@ -190,8 +190,22 @@ If asked about shelters, advise the user to: check the MonsoonShield Shelter Fin
       }));
 
     const chat = model.startChat({ history: chatHistory });
-    const result = await chat.sendMessage(realtimeData + referenceData + "\n\n## USER MESSAGE\n" + message);
-    const responseText = result.response.text();
+    const userMsg = realtimeData + referenceData + "\n\n## USER MESSAGE\n" + message;
+    let result;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        result = await chat.sendMessage(userMsg);
+        break;
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : "";
+        if (msg.includes("503") && attempt < 2) {
+          await new Promise((r) => setTimeout(r, 2000 * (attempt + 1)));
+          continue;
+        }
+        throw e;
+      }
+    }
+    const responseText = result!.response.text();
 
     return NextResponse.json({ reply: responseText });
   } catch (error: unknown) {

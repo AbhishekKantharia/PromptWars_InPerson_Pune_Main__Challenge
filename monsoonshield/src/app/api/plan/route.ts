@@ -74,7 +74,7 @@ All cost figures must be labeled as "estimated" and are approximate Indian marke
 
     const genAI = new GoogleGenerativeAI(API_KEY);
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash",
+      model: "gemini-3.5-flash",
       systemInstruction: systemPrompt,
       safetySettings: [
         { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
@@ -83,9 +83,22 @@ All cost figures must be labeled as "estimated" and are approximate Indian marke
         { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
       ],
     });
-    const result = await model.generateContent(prompt);
+    let result;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        result = await model.generateContent(prompt);
+        break;
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : "";
+        if (msg.includes("503") && attempt < 2) {
+          await new Promise((r) => setTimeout(r, 2000 * (attempt + 1)));
+          continue;
+        }
+        throw e;
+      }
+    }
 
-    return NextResponse.json({ plan: result.response.text() });
+    return NextResponse.json({ plan: result!.response.text() });
   } catch (error: unknown) {
     console.error("API /plan error:", error instanceof Error ? error.message : error);
     return NextResponse.json({ error: "Failed to generate plan" }, { status: 500 });
