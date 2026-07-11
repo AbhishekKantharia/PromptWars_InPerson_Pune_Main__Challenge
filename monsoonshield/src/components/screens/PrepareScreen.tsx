@@ -55,9 +55,12 @@ export default function PrepareScreen() {
 
   const handleGeneratePlan = async () => {
     setIsGenerating(true);
+    setCustomPlan("");
     setActiveTab("plan");
     try {
-      const planText = await generatePreparednessplan(profile);
+      const planText = await generatePreparednessplan(profile, (partial) => {
+        setCustomPlan(partial);
+      });
       setCustomPlan(planText);
     } catch (err) {
       console.error(err);
@@ -245,15 +248,23 @@ export default function PrepareScreen() {
             </div>
           ) : (
             <div className="glass-card p-6 border-slate-850 min-h-[300px]">
-              {isGenerating ? (
+              {isGenerating && !customPlan ? (
                 <div className="flex flex-col items-center justify-center min-h-[250px] space-y-4">
                   <LoaderIcon />
-                  <span className="text-xs text-slate-400">Varsha AI is customizing your emergency guidelines...</span>
+                  <span className="text-xs text-slate-400">Fetching real-time data and generating your plan...</span>
                 </div>
               ) : customPlan ? (
-                <div className="prose prose-invert prose-xs max-w-none space-y-4 text-slate-300">
-                  <div className="whitespace-pre-line text-xs leading-relaxed font-mono">
-                    {customPlan}
+                <div className="space-y-3">
+                  {isGenerating && (
+                    <div className="flex items-center gap-2 text-cyan-400 text-[10px] font-semibold uppercase tracking-wider mb-2">
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      <span>Generating...</span>
+                    </div>
+                  )}
+                  <div className="prose prose-invert prose-xs max-w-none space-y-4 text-slate-300">
+                    <div className="whitespace-pre-line text-xs leading-relaxed">
+                      {customPlan}
+                    </div>
                   </div>
                 </div>
               ) : (
