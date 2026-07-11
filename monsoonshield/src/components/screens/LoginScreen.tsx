@@ -11,6 +11,13 @@ export default function LoginScreen() {
   const [otpTimer, setOtpTimer] = useState(0);
   const [showOtpDemo, setShowOtpDemo] = useState(false);
 
+  const raindrops = useMemo(() => Array.from({ length: 20 }).map((_, i) => ({
+    id: i,
+    left: `${Math.random() * 100}%`,
+    duration: `${1 + Math.random() * 2}s`,
+    delay: `${Math.random() * 3}s`,
+  })), []);
+
   useEffect(() => {
     if (otpTimer <= 0) return;
     const t = setTimeout(() => setOtpTimer((p) => p - 1), 1000);
