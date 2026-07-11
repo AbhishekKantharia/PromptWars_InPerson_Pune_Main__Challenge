@@ -106,7 +106,7 @@ export async function generatePreparednessplan(profile: {
   homeType: string;
   hasVehicle: boolean;
   floodRiskScore: number;
-}): Promise<string> {
+}, onChunk?: (text: string) => void): Promise<string> {
   try {
     const res = await fetch("/api/plan", {
       method: "POST",
@@ -116,15 +116,118 @@ export async function generatePreparednessplan(profile: {
 
     if (!res.ok) {
       if (res.status === 429) {
-        return "⚠️ AI service quota temporarily reached. Your preparedness plan will be available again in a few minutes.\n\n📞 Emergency: 112 | Flood Helpline: 1078";
+        return "⚠️ AI service quota temporarily reached. Your plan will be available again in a few minutes.\n\n📞 Emergency: 112 | Flood Helpline: 1078";
       }
-      return DEMO_PREPAREDNESS_PLAN;
+      return getFallbackPlan(profile);
     }
-    const data = await res.json();
-    return data.plan || DEMO_PREPAREDNESS_PLAN;
+
+    // Check if it's a streaming response or JSON error
+    const contentType = res.headers.get("content-type") || "";
+    if (contentType.includes("text/event-stream")) {
+      const reader = res.body?.getReader();
+      if (!reader) return getFallbackPlan(profile);
+
+      const decoder = new TextDecoder();
+      let fullText = "";
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          try {
+            const parsed = JSON.parse(line);
+            if (parsed.done) break;
+            if (parsed.error) return parsed.error;
+            if (parsed.t) {
+              fullText += parsed.t;
+              onChunk?.(fullText);
+            }
+          } catch { /* skip */ }
+        }
+      }
+      return fullText || getFallbackPlan(profile);
+    }
+
+    // Fallback: plain text response (cached)
+    const text = await res.text();
+    return text || getFallbackPlan(profile);
   } catch {
-    return DEMO_PREPAREDNESS_PLAN;
+    return getFallbackPlan(profile);
   }
+}
+
+function getFallbackPlan(profile: {
+  location: string;
+  familySize: number;
+  hasChildren: boolean;
+  hasElderly: boolean;
+  hasMedicalConditions: boolean;
+  homeType: string;
+  hasVehicle: boolean;
+  floodRiskScore: number;
+}): string {
+  const familySize = profile.familySize || 4;
+  const waterLiters = familySize * 3 * 3;
+  const riskLabel = profile.floodRiskScore >= 75 ? "EXTREME" : profile.floodRiskScore >= 55 ? "HIGH" : profile.floodRiskScore >= 35 ? "MODERATE" : "LOW";
+
+  const childNote = profile.hasChildren ? "\n- Keep a whistle for each child. Store children's favorite items in emergency bag to keep them calm." : "";
+  const elderNote = profile.hasElderly ? "\n- Pre-pack 1-week supply of all medications. Arrange wheelchair/walker access to upper floor. Keep a printed list of all medicines." : "";
+  const medicalNote = profile.hasMedicalConditions ? "\n- Carry 2-week medicine supply in waterproof bag. Keep doctor's emergency number saved. Carry prescription copies." : "";
+  const vehicleNote = profile.hasVehicle ? "\n- Keep vehicle fueled above half-tank all season. Park on high ground if flood warning issued. Vehicle can transport elderly/children to safety." : "\n- No vehicle: pre-arrange neighbor/relative with vehicle for evacuation. Locate nearest public transport route to shelter.";
+
+  return `## Personalized Monsoon Preparedness Plan
+**Location:** ${profile.location}
+**Household:** ${familySize} members | ${profile.homeType.replace("_", " ")} | Risk: ${riskLabel} (${profile.floodRiskScore}/100)
+
+---
+
+### 🔴 CRITICAL — Do This Week
+
+1. **Emergency Water Supply** — Store ${waterLiters}L clean drinking water (${familySize} people x 3L x 3 days). Use food-grade containers. Cost: ~₹200-400 (estimated)
+2. **Emergency Kit** — Pack waterproof bag: torch + extra batteries, first aid box, whistle, power bank, phone charger, ₹5000 cash, photocopies of Aadhaar + insurance. Cost: ~₹1500-2500 (estimated)
+3. **Medicine Stock** — ${profile.hasMedicalConditions ? "2-week" : "1-week"} supply of all regular prescriptions. Keep in waterproof container. Cost: varies by medication
+4. **Document Vault** — Photograph Aadhaar, ration card, insurance policies, property documents. Upload to cloud (Google Drive/WhatsApp to family). Cost: Free
+5. **Emergency Contacts** — Save in phone: 112 (National Emergency), 1078 (Flood Helpline), 108 (Ambulance), 104 (Health Helpline), District Collector Office${childNote}${elderNote}${medicalNote}
+
+---
+
+### 🟡 IMPORTANT — Do This Month
+
+6. **Home Flood-Proofing** — ${profile.homeType === "ground_floor" || profile.homeType === "basement" ? "Raise electrical sockets above expected water level. Install one-way valve on drainage. Seal gaps in walls/floors with waterproof sealant." : "Check balcony drains are clear. Ensure water doesn't enter from windows during heavy rain."} Cost: ~₹500-2000 (estimated)
+7. **Family Emergency Plan** — Designate meeting point (relative's house on higher ground). Set up family group chat. Practice evacuation route with all members including children.
+8. **Insurance Review** — Check if home insurance covers flood damage. Note claim process. Keep IRDAI helpline: 1800-11-0001. Cost: Free to check
+9. **Neighborhood Coordination** — Share emergency numbers with 2-3 neighbors. Identify who has a vehicle, who has medical training, who has a generator.
+
+---
+
+### 🟢 ONGOING — Throughout Monsoon
+
+10. **Daily Routine** — Check MonsoonShield alerts every morning. Check IMD (mausam.imd.gov.in) if no alerts.
+11. **Water Management** — Keep rooftops and drains clear. Empty flower pots, coolers, tires (dengue prevention).${vehicleNote}
+12. **Family Check-ins** — Use MonsoonShield Safe Check-In during heavy rain events. Confirm all family members are safe.
+
+---
+
+### 🚨 IF FLOOD WARNING ISSUESD
+
+1. Turn off electricity at main switch immediately — electrocution is the #1 flood killer
+2. Move to highest floor/roof with emergency kit
+3. Do NOT walk through flowing water (6 inches can knock you down)
+4. Call 112 or use MonsoonShield SOS button
+5. ${profile.hasVehicle ? "Move vehicle to high ground BEFORE water rises" : "Call neighbor/relative with vehicle for evacuation"}
+6. ${profile.hasChildren ? "Keep children together, give each a whistle to blow if separated" : ""}${profile.hasElderly ? "Assist elderly members first — carry medications and documents" : ""}
+
+---
+
+📞 Emergency: 112 | Flood Helpline: 1078 | Ambulance: 108 | Health: 104
+*Sources: NDMA Guidelines, IMD Protocol, MonsoonShield AI*
+*Note: This is a fallback plan. For a fully personalized AI plan, Gemini quota may need to refresh (20 requests/day).*
+`;
 }
 
 export async function analyzeRisk(data: {

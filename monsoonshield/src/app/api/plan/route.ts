@@ -4,10 +4,9 @@ import { fetchAllRealData } from "@/lib/realData";
 
 const API_KEY = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || "";
 
-// Cache for preparedness plans (keyed by profile params)
 interface CacheEntry { data: string; expiresAt: number; }
 const planCache = new Map<string, CacheEntry>();
-const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+const CACHE_TTL_MS = 60 * 60 * 1000;
 
 function getCachedPlan(key: string): string | null {
   const entry = planCache.get(key);
@@ -34,6 +33,18 @@ function checkRateLimit(ip: string, max = 5, windowMs = 600000): boolean {
   return true;
 }
 
+const SYSTEM_PROMPT = `You are Varsha, MonsoonShield's disaster preparedness planner. You generate PERSONALIZED, ACTIONABLE household emergency plans grounded in real data.
+
+RULES — ZERO HALLUCINATION:
+- ONLY reference facts from the real-time data block below.
+- For cost estimates: label them "estimated" and use typical Indian market ranges. Never fabricate exact prices.
+- Never invent specific NDMA guideline numbers. Say "NDMA recommends" without fake reference IDs.
+- Every action item must be specific to THIS household's profile (location, family composition, home type, risk level).
+- If the real-time data shows active alerts or flood risk, PRIORITIZE those threats in the plan.
+- If data is missing for a category, say what is known and what is uncertain.
+- Always include the emergency contacts from the provided data.
+- Format as a structured markdown plan with clear priority levels.`;
+
 export async function POST(request: NextRequest) {
   try {
     const ip = request.headers.get("x-forwarded-for") || "unknown";
@@ -52,14 +63,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid location" }, { status: 400 });
     }
 
-    // Check cache
     const cacheKey = `${location}:${familySize}:${hasChildren}:${hasElderly}:${hasMedicalConditions}:${homeType}:${hasVehicle}:${floodRiskScore}`;
     const cached = getCachedPlan(cacheKey);
     if (cached) {
-      return NextResponse.json({ plan: cached, cached: true });
+      return new Response(cached, { headers: { "Content-Type": "text/plain" } });
     }
 
-    // Fetch real-time data + initialize Gemini model in parallel
     const userLat = parseFloat(lat) || 18.52;
     const userLng = parseFloat(lng) || 73.86;
 
@@ -68,42 +77,39 @@ export async function POST(request: NextRequest) {
       Promise.resolve(new GoogleGenerativeAI(API_KEY)),
     ]);
 
-    const systemPrompt = `You are Varsha, MonsoonShield's AI preparedness planning assistant grounded in NDMA guidelines.
+    const familyProfile = [
+      `${familySize || 4} members`,
+      hasChildren ? "includes children under 12" : null,
+      hasElderly ? "includes elderly members (65+)" : null,
+      hasMedicalConditions ? "has members with regular medical needs (insulin, dialysis, etc.)" : null,
+      `home type: ${homeType || "apartment"}`,
+      hasVehicle ? "has family vehicle" : "no personal vehicle",
+    ].filter(Boolean).join(", ");
 
-CRITICAL RULES:
-- ONLY use the factual data provided below. Do NOT make up any numbers, costs, or references.
-- For cost estimates: state that costs are approximate ranges based on typical Indian market prices, not exact quotes. Clearly label them as "estimated" or "approximate".
-- Do NOT invent specific NDMA guideline numbers. Only reference NDMA guidelines in general terms.
-- Be specific to the household's actual situation and the actual risk data provided.
-- Always include emergency contacts from the provided data.
-- Include the data source attribution.`;
+    const prompt = `Generate a personalized monsoon preparedness plan for a household at ${location}.
 
-    const prompt = `Generate a personalized monsoon preparedness plan for this Indian household:
-Location: ${location}
-Family Size: ${familySize || 4} members
-Has Children: ${hasChildren || false}
-Has Elderly Members: ${hasElderly || false}
-Medical Conditions: ${hasMedicalConditions || false}
-Home Type: ${homeType || "apartment"}
-Has Vehicle: ${hasVehicle || false}
-Flood Risk Score: ${floodRiskScore || 58}/100
+HOUSEHOLD PROFILE: ${familyProfile}
+FLOOD RISK SCORE: ${floodRiskScore || 50}/100
 
+REAL-TIME DATA:
 ${realtimeData}
 
-Create a structured plan with:
-1. CRITICAL actions (this week)
-2. IMPORTANT actions (this month)
-3. ONGOING actions (throughout monsoon)
-4. EMERGENCY protocol (if flood warning)
+INSTRUCTIONS:
+1. Start with a 2-sentence situation assessment based on the actual weather and alert data above.
+2. Then provide a structured plan with these sections:
+   - 🔴 CRITICAL (do THIS WEEK) — 4-6 items, each with specific action, why it matters for THIS household, estimated time, and estimated cost in ₹
+   - 🟡 IMPORTANT (do THIS MONTH) — 4-6 items same format
+   - 🟢 ONGOING (throughout monsoon) — 3-4 items
+   - 🚨 EMERGENCY PROTOCOL — only if active flood/cyclone alerts exist in the data
+3. Each action must account for the household's special conditions (children, elderly, medical needs, vehicle access).
+4. Include specific emergency contacts from the data above.
+5. End with data source attribution.
 
-Format: [PRIORITY] Action - Why - Time - Cost in ₹ (labeled as "estimated")
-Include emergency contacts from the data above.
-Do NOT invent specific NDMA guideline numbers. Only reference NDMA in general terms.
-All cost figures must be labeled as "estimated" and are approximate Indian market prices.`;
+Format as clear markdown. Be direct and actionable — no generic advice.`;
 
     const model = genAI.getGenerativeModel({
       model: "gemini-3.5-flash",
-      systemInstruction: systemPrompt,
+      systemInstruction: SYSTEM_PROMPT,
       safetySettings: [
         { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
         { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
@@ -111,10 +117,11 @@ All cost figures must be labeled as "estimated" and are approximate Indian marke
         { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
       ],
     });
-    let result;
+
+    let stream;
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
-        result = await model.generateContent(prompt);
+        stream = await model.generateContentStream(prompt);
         break;
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "";
@@ -127,10 +134,32 @@ All cost figures must be labeled as "estimated" and are approximate Indian marke
       }
     }
 
-    const text = result!.response.text();
-    setPlanCache(cacheKey, text);
+    const encoder = new TextEncoder();
+    let fullText = "";
 
-    return NextResponse.json({ plan: text });
+    const readable = new ReadableStream({
+      async start(controller) {
+        try {
+          for await (const chunk of stream!.stream) {
+            const text = chunk?.text?.();
+            if (text) {
+              fullText += text;
+              controller.enqueue(encoder.encode(JSON.stringify({ t: text }) + "\n"));
+            }
+          }
+          setPlanCache(cacheKey, fullText);
+          controller.enqueue(encoder.encode(JSON.stringify({ done: true }) + "\n"));
+          controller.close();
+        } catch {
+          controller.enqueue(encoder.encode(JSON.stringify({ error: "Stream interrupted" }) + "\n"));
+          controller.close();
+        }
+      },
+    });
+
+    return new Response(readable, {
+      headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", "Connection": "keep-alive" },
+    });
   } catch (error: unknown) {
     const errMsg = error instanceof Error ? error.message : String(error);
     console.error("API /plan error:", errMsg);
