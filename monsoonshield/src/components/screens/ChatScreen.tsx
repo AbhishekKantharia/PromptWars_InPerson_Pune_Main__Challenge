@@ -195,7 +195,7 @@ I can help you with:
     recognition.interimResults = false;
 
     recognition.onresult = (event: SpeechRecognitionEvent) => {
-      const resultText = event.results[0][0].transcript;
+      const resultText = event.results[0]![0]!.transcript;
       setInputValue(resultText);
     };
 
