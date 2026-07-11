@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Sparkles, CheckCircle2, Circle, ListTodo } from "lucide-react";
+import { Sparkles, CheckCircle2, Circle, ListTodo, Loader2 } from "lucide-react";
 import { generatePreparednessplan } from "@/lib/gemini";
 import { useAuth } from "@/lib/AuthContext";
 import { useRealData } from "@/lib/RealDataContext";
