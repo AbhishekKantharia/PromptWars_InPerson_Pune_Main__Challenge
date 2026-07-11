@@ -154,8 +154,32 @@ I can help you with:
 
   const startVoiceRecognition = () => {
     if (typeof window === "undefined") return;
-    const SpeechRecognition =
-      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    interface SpeechRecognitionLike {
+      new (): SpeechRecognitionInstance;
+    }
+    interface SpeechRecognitionInstance {
+      lang: string;
+      continuous: boolean;
+      interimResults: boolean;
+      onresult: ((event: SpeechRecognitionEvent) => void) | null;
+      onerror: ((event: unknown) => void) | null;
+      start: () => void;
+    }
+    interface SpeechRecognitionEvent {
+      results: SpeechRecognitionResultList;
+    }
+    interface SpeechRecognitionResultList {
+      [index: number]: SpeechRecognitionResult;
+    }
+    interface SpeechRecognitionResult {
+      [index: number]: SpeechRecognitionAlternative;
+    }
+    interface SpeechRecognitionAlternative {
+      transcript: string;
+    }
+
+    const WinWithSR = window as unknown as { SpeechRecognition?: SpeechRecognitionLike; webkitSpeechRecognition?: SpeechRecognitionLike };
+    const SpeechRecognition = WinWithSR.SpeechRecognition || WinWithSR.webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
       alert("Voice input is not supported in this browser. Try Chrome.");
