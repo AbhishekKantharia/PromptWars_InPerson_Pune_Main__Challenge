@@ -4,6 +4,31 @@ import { fetchAllRealData } from "@/lib/realData";
 
 const API_KEY = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || "";
 
+// ============================================================
+// RESPONSE CACHE — critical for staying under 20 req/day free tier
+// ============================================================
+
+interface CacheEntry {
+  data: string;
+  expiresAt: number;
+}
+
+const briefingCache = new Map<string, CacheEntry>();
+const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+
+function getCached(key: string): string | null {
+  const entry = briefingCache.get(key);
+  if (entry && Date.now() < entry.expiresAt) return entry.data;
+  if (entry) briefingCache.delete(key);
+  return null;
+}
+
+function setCache(key: string, data: string) {
+  briefingCache.set(key, { data, expiresAt: Date.now() + CACHE_TTL_MS });
+}
+
+// ============================================================
+
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 
 function checkRateLimit(ip: string, max = 10, windowMs = 300000): boolean {
@@ -37,6 +62,13 @@ export async function POST(request: NextRequest) {
     }
 
     const lang = language === "hi" ? "Hindi" : "English";
+
+    // Check cache first — saves Gemini API quota
+    const cacheKey = `briefing:${location}:${lang}`;
+    const cached = getCached(cacheKey);
+    if (cached) {
+      return NextResponse.json({ briefing: cached, cached: true });
+    }
 
     // Fetch real-time data using user-provided coordinates
     const userLat = parseFloat(lat) || 18.52;
@@ -83,17 +115,30 @@ Include the data source attribution (e.g., "Source: Open-Meteo, NDMA SACHET").`;
         break;
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "";
-        if (msg.includes("503") && attempt < 2) {
-          await new Promise((r) => setTimeout(r, 2000 * (attempt + 1)));
+        if ((msg.includes("503") || msg.includes("429")) && attempt < 2) {
+          const retryMs = msg.includes("429") ? 60000 : 2000 * (attempt + 1);
+          await new Promise((r) => setTimeout(r, retryMs));
           continue;
         }
         throw e;
       }
     }
 
-    return NextResponse.json({ briefing: result!.response.text() });
+    const text = result!.response.text();
+    setCache(cacheKey, text);
+
+    return NextResponse.json({ briefing: text });
   } catch (error: unknown) {
-    console.error("API /briefing error:", error instanceof Error ? error.message : error);
+    const errMsg = error instanceof Error ? error.message : String(error);
+    console.error("API /briefing error:", errMsg);
+
+    if (errMsg.includes("429") || errMsg.includes("quota")) {
+      return NextResponse.json(
+        { error: "AI service quota reached. Briefing temporarily unavailable." },
+        { status: 429 }
+      );
+    }
+
     return NextResponse.json({ error: "Failed to generate briefing" }, { status: 500 });
   }
 }
