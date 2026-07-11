@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { Sparkles, AlertTriangle, ArrowRight, Loader2 } from "lucide-react";
 import { SidebarTab } from "@/components/layout/Sidebar";
-import type { RealAlert } from "@/lib/realData";
+import { useRealData } from "@/lib/RealDataContext";
 
 interface HomeScreenProps {
   setActiveTab: (tab: SidebarTab) => void;
@@ -18,16 +17,7 @@ const drops = Array.from({ length: 40 }).map((_, i) => ({
 }));
 
 export default function HomeScreen({ setActiveTab }: HomeScreenProps) {
-  const [alerts, setAlerts] = useState<RealAlert[]>([]);
-  const [alertsLoading, setAlertsLoading] = useState(true);
-
-  useEffect(() => {
-    fetch("/api/alerts")
-      .then(r => r.json())
-      .then(data => { if (Array.isArray(data)) setAlerts(data); })
-      .catch(() => {})
-      .finally(() => setAlertsLoading(false));
-  }, []);
+  const { alerts, alertsLoading } = useRealData();
 
   return (
     <div className="relative min-h-[calc(100vh-73px)] w-full hero-gradient flex flex-col items-center justify-center p-8 overflow-hidden">

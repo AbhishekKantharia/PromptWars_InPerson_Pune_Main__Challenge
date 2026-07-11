@@ -4,6 +4,7 @@ export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   timestamp: Date;
+  _streaming?: boolean;
 }
 
 export async function sendMessage(
@@ -18,7 +19,8 @@ export async function sendMessage(
     hasChildren?: boolean;
     hasElderly?: boolean;
     hasMedical?: boolean;
-  }
+  },
+  onChunk?: (text: string) => void,
 ): Promise<string> {
   try {
     const res = await fetch("/api/chat", {
@@ -35,8 +37,34 @@ export async function sendMessage(
       return getDemoResponse(message, userContext);
     }
 
-    const data = await res.json();
-    return data.reply || getDemoResponse(message, userContext);
+    const reader = res.body?.getReader();
+    if (!reader) return getDemoResponse(message, userContext);
+
+    const decoder = new TextDecoder();
+    let fullText = "";
+    let buffer = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || "";
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        try {
+          const parsed = JSON.parse(line);
+          if (parsed.done) break;
+          if (parsed.error) return parsed.error;
+          if (parsed.t) {
+            fullText += parsed.t;
+            onChunk?.(fullText);
+          }
+        } catch { /* skip malformed */ }
+      }
+    }
+
+    return fullText || getDemoResponse(message, userContext);
   } catch (error) {
     console.error("Chat API error:", error);
     return getDemoResponse(message, userContext);

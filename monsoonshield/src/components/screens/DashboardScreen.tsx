@@ -11,8 +11,8 @@ import {
 import { getRiskColor, getRiskBgColor, getRiskLabel } from "@/lib/utils";
 import { generateBriefing } from "@/lib/gemini";
 import { useAuth } from "@/lib/AuthContext";
+import { useRealData } from "@/lib/RealDataContext";
 import { SidebarTab } from "@/components/layout/Sidebar";
-import type { RealWeather, RealAlert } from "@/lib/realData";
 
 interface DashboardScreenProps {
   setActiveTab: (tab: SidebarTab) => void;
@@ -51,47 +51,10 @@ function getAlertTypeIcon(type: string): string {
 
 export default function DashboardScreen({ setActiveTab, language }: DashboardScreenProps) {
   const { user } = useAuth();
-  const [riskScore, setRiskScore] = useState(50);
+  const { weather, weatherLoading, alerts, alertsLoading, riskScore } = useRealData();
   const [briefing, setBriefing] = useState("");
   const [isGeneratingBriefing, setIsGeneratingBriefing] = useState(false);
   const [, startTransition] = useTransition();
-
-  const [weather, setWeather] = useState<RealWeather | null>(null);
-  const [weatherLoading, setWeatherLoading] = useState(true);
-  const [alerts, setAlerts] = useState<RealAlert[]>([]);
-  const [alertsLoading, setAlertsLoading] = useState(true);
-
-  // Fetch real weather
-  useEffect(() => {
-    setWeatherLoading(true);
-    fetch("/api/weather")
-      .then((r) => r.json())
-      .then((data) => { if (!data.error) setWeather(data); })
-      .catch(() => {})
-      .finally(() => setWeatherLoading(false));
-  }, []);
-
-  // Fetch real alerts
-  useEffect(() => {
-    setAlertsLoading(true);
-    fetch("/api/alerts")
-      .then((r) => r.json())
-      .then((data) => { if (Array.isArray(data)) setAlerts(data); })
-      .catch(() => {})
-      .finally(() => setAlertsLoading(false));
-  }, []);
-
-  // Compute dynamic risk score from real weather data
-  useEffect(() => {
-    if (weather) {
-      const rainfallScore = Math.min(40, (weather.rainfallMm / 100) * 40);
-      const windScore = Math.min(20, (weather.windSpeed / 100) * 20);
-      const humidityScore = weather.humidity > 90 ? 15 : weather.humidity > 75 ? 8 : 0;
-      const alertScore = Math.min(25, alerts.length * 5);
-      const score = Math.round(rainfallScore + windScore + humidityScore + alertScore);
-      setRiskScore(Math.max(10, Math.min(95, score)));
-    }
-  }, [weather, alerts]);
 
   const generateAIBriefing = useCallback(() => {
     startTransition(async () => {

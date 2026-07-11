@@ -70,10 +70,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ briefing: cached, cached: true });
     }
 
-    // Fetch real-time data using user-provided coordinates
+    // Fetch real-time data + initialize Gemini model in parallel
     const userLat = parseFloat(lat) || 18.52;
     const userLng = parseFloat(lng) || 73.86;
-    const realtimeData = await fetchAllRealData(userLat, userLng, location);
+
+    const [realtimeData, genAI] = await Promise.all([
+      fetchAllRealData(userLat, userLng, location),
+      Promise.resolve(new GoogleGenerativeAI(API_KEY)),
+    ]);
 
     const systemPrompt = `You are Varsha, MonsoonShield's AI monsoon briefing assistant grounded in IMD and NDMA guidelines.
 
@@ -97,7 +101,6 @@ Write a 3-4 sentence briefing in ${lang}:
 Use NDMA/IMD language. Be factual, calm, actionable. ONLY cite data that is provided above.
 Include the data source attribution (e.g., "Source: Open-Meteo, NDMA SACHET").`;
 
-    const genAI = new GoogleGenerativeAI(API_KEY);
     const model = genAI.getGenerativeModel({
       model: "gemini-3.5-flash",
       systemInstruction: systemPrompt,

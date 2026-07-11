@@ -147,13 +147,14 @@ export async function POST(request: NextRequest) {
       ? `\n\n## USER CONTEXT\n- Location: ${context.location || "India"}\n- Risk Score: ${context.riskScore || "Unknown"}/100\n- Language: ${context.language || "English"}\n- Family: ${context.familySize || "Unknown"} members\n- Children: ${context.hasChildren ? "Yes" : "No"}\n- Elderly: ${context.hasElderly ? "Yes" : "No"}\n- Medical: ${context.hasMedical ? "Yes" : "No"}`
       : "";
 
-    // Fetch real-time data from public APIs using user-provided coordinates
+    // Fetch real-time data + initialize Gemini model in parallel
     const userLat = parseFloat(context?.lat) || 18.52;
     const userLng = parseFloat(context?.lng) || 73.86;
-    const realtimeData = await fetchAllRealData(
-      userLat, userLng,
-      context?.location || "Pune, Maharashtra"
-    );
+
+    const [realtimeData, genAI] = await Promise.all([
+      fetchAllRealData(userLat, userLng, context?.location || "Pune, Maharashtra"),
+      Promise.resolve(new GoogleGenerativeAI(API_KEY)),
+    ]);
 
     // Emergency contacts and shelters (no public API available — use reference data)
     const referenceData = `
@@ -170,8 +171,7 @@ Emergency shelter locations, community reports, and volunteer availability are n
 If asked about shelters, advise the user to: check the MonsoonShield Shelter Finder tab, call 1078 (Flood Helpline), or contact local district administration.
 `;
 
-    // Initialize Gemini (server-side only)
-    const genAI = new GoogleGenerativeAI(API_KEY);
+    // Initialize Gemini model (server-side only)
     const model = genAI.getGenerativeModel({
       model: "gemini-3.5-flash",
       systemInstruction: SYSTEM_PROMPT + contextBlock,
@@ -201,10 +201,11 @@ If asked about shelters, advise the user to: check the MonsoonShield Shelter Fin
 
     const chat = model.startChat({ history: chatHistory });
     const userMsg = realtimeData + referenceData + "\n\n## USER MESSAGE\n" + message;
-    let result;
+
+    let stream;
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
-        result = await chat.sendMessage(userMsg);
+        stream = await chat.sendMessageStream(userMsg);
         break;
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "";
@@ -216,9 +217,30 @@ If asked about shelters, advise the user to: check the MonsoonShield Shelter Fin
         throw e;
       }
     }
-    const responseText = result!.response.text();
 
-    return NextResponse.json({ reply: responseText });
+    // Stream the response chunks as newline-delimited JSON
+    const encoder = new TextEncoder();
+    const readable = new ReadableStream({
+      async start(controller) {
+        try {
+          for await (const chunk of stream!.stream) {
+            const text = chunk?.text?.();
+            if (text) {
+              controller.enqueue(encoder.encode(JSON.stringify({ t: text }) + "\n"));
+            }
+          }
+          controller.enqueue(encoder.encode(JSON.stringify({ done: true }) + "\n"));
+          controller.close();
+        } catch (err) {
+          controller.enqueue(encoder.encode(JSON.stringify({ error: "Stream interrupted" }) + "\n"));
+          controller.close();
+        }
+      },
+    });
+
+    return new Response(readable, {
+      headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", "Connection": "keep-alive" },
+    });
   } catch (error: unknown) {
     const errMsg = error instanceof Error ? error.message : String(error);
     console.error("API /chat error:", errMsg);

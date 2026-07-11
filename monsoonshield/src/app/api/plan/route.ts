@@ -59,10 +59,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ plan: cached, cached: true });
     }
 
-    // Fetch real-time data using user-provided coordinates
+    // Fetch real-time data + initialize Gemini model in parallel
     const userLat = parseFloat(lat) || 18.52;
     const userLng = parseFloat(lng) || 73.86;
-    const realtimeData = await fetchAllRealData(userLat, userLng, location);
+
+    const [realtimeData, genAI] = await Promise.all([
+      fetchAllRealData(userLat, userLng, location),
+      Promise.resolve(new GoogleGenerativeAI(API_KEY)),
+    ]);
 
     const systemPrompt = `You are Varsha, MonsoonShield's AI preparedness planning assistant grounded in NDMA guidelines.
 
@@ -97,7 +101,6 @@ Include emergency contacts from the data above.
 Do NOT invent specific NDMA guideline numbers. Only reference NDMA in general terms.
 All cost figures must be labeled as "estimated" and are approximate Indian market prices.`;
 
-    const genAI = new GoogleGenerativeAI(API_KEY);
     const model = genAI.getGenerativeModel({
       model: "gemini-3.5-flash",
       systemInstruction: systemPrompt,

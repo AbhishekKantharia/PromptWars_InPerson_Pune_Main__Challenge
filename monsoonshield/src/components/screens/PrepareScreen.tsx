@@ -4,9 +4,11 @@ import { useState, useEffect } from "react";
 import { Sparkles, CheckCircle2, Circle, ListTodo } from "lucide-react";
 import { generatePreparednessplan } from "@/lib/gemini";
 import { useAuth } from "@/lib/AuthContext";
+import { useRealData } from "@/lib/RealDataContext";
 
 export default function PrepareScreen() {
   const { user } = useAuth();
+  const { riskScore } = useRealData();
   const [profile, setProfile] = useState({
     location: "Pune, Maharashtra",
     familySize: 4,
@@ -18,21 +20,10 @@ export default function PrepareScreen() {
     floodRiskScore: 50,
   });
 
-  // Fetch real weather data to compute dynamic risk score
+  // Update risk score from shared data
   useEffect(() => {
-    fetch("/api/weather")
-      .then(r => r.json())
-      .then(data => {
-        if (!data.error && "rainfallMm" in data) {
-          const rainfallScore = Math.min(40, (data.rainfallMm / 100) * 40);
-          const windScore = Math.min(20, (data.windSpeed / 100) * 20);
-          const humidityScore = data.humidity > 90 ? 15 : data.humidity > 75 ? 8 : 0;
-          const score = Math.round(rainfallScore + windScore + humidityScore + 10);
-          setProfile(p => ({ ...p, floodRiskScore: Math.max(10, Math.min(95, score)) }));
-        }
-      })
-      .catch(() => {});
-  }, []);
+    setProfile(p => ({ ...p, floodRiskScore: riskScore }));
+  }, [riskScore]);
 
   // Update location from user profile
   useEffect(() => {

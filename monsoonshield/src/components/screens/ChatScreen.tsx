@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { Send, Sparkles, Mic, Volume2, Info, Loader2, Trash2 } from "lucide-react";
 import { sendMessage, ChatMessage } from "@/lib/gemini";
 import { useAuth } from "@/lib/AuthContext";
-import type { RealWeather } from "@/lib/realData";
+import { useRealData } from "@/lib/RealDataContext";
 
 interface ChatScreenProps {
   language: string;
@@ -12,6 +12,7 @@ interface ChatScreenProps {
 
 export default function ChatScreen({ language }: ChatScreenProps) {
   const { user } = useAuth();
+  const { riskScore } = useRealData();
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
     const welcomeHi = `नमस्ते! 🙏 मैं वर्षा (Varsha) हूँ, आपकी MonsoonShield AI सहायता गाइड।
 
@@ -59,25 +60,7 @@ I can help you with:
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [ttsEnabled, setTtsEnabled] = useState(false);
-  const [riskScore, setRiskScore] = useState(50);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  // Fetch weather on mount to compute dynamic risk score
-  useEffect(() => {
-    fetch("/api/weather")
-      .then(r => r.json())
-      .then((data) => {
-        if (data && "rainfallMm" in data) {
-          const w = data as RealWeather;
-          const rainfallScore = Math.min(40, (w.rainfallMm / 100) * 40);
-          const windScore = Math.min(20, (w.windSpeed / 100) * 20);
-          const humidityScore = w.humidity > 90 ? 15 : w.humidity > 75 ? 8 : 0;
-          const score = Math.round(rainfallScore + windScore + humidityScore + 10);
-          setRiskScore(Math.max(10, Math.min(95, score)));
-        }
-      })
-      .catch(() => {});
-  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -110,15 +93,25 @@ I can help you with:
         hasElderly: user?.hasElderly,
         hasMedical: user?.hasMedical,
         profile: user ? `${user.name}, ${user.familySize} members, ${user.floor} floor` : undefined,
+      }, (partialText) => {
+        // Streaming callback — update the assistant message in-place
+        setMessages((prev) => {
+          const last = prev[prev.length - 1];
+          if (last && last.role === "assistant" && last._streaming) {
+            return [...prev.slice(0, -1), { ...last, content: partialText }];
+          }
+          return [...prev, { role: "assistant", content: partialText, timestamp: new Date(), _streaming: true }];
+        });
       });
 
-      const assistantMsg: ChatMessage = {
-        role: "assistant",
-        content: responseText,
-        timestamp: new Date(),
-      };
-
-      setMessages((prev) => [...prev, assistantMsg]);
+      // Finalize the streaming message
+      setMessages((prev) => {
+        const last = prev[prev.length - 1];
+        if (last && last.role === "assistant" && last._streaming) {
+          return [...prev.slice(0, -1), { ...last, content: responseText, _streaming: false }];
+        }
+        return [...prev, { role: "assistant", content: responseText, timestamp: new Date() }];
+      });
 
       if (ttsEnabled && typeof window !== "undefined" && window.speechSynthesis) {
         const cleaned = responseText

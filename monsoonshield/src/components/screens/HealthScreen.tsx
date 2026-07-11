@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import {
   Droplets, Wind, Bug, AlertTriangle, Phone,
   Heart, Shield, Loader2
 } from "lucide-react";
-import type { RealAlert } from "@/lib/realData";
+import { useRealData } from "@/lib/RealDataContext";
 
 const PREVENTION_CHECKLIST = [
   { id: 1, label: "Empty flower pots, coolers, tires weekly", category: "mosquito", done: false },
@@ -39,27 +39,15 @@ const HEALTH_TIPS = [
 export default function HealthScreen() {
   const [checklist, setChecklist] = useState(PREVENTION_CHECKLIST);
   const [activeFilter, setActiveFilter] = useState("all");
-  const [healthAlerts, setHealthAlerts] = useState<RealAlert[]>([]);
-  const [alertsLoading, setAlertsLoading] = useState(true);
+  const { alerts, alertsLoading } = useRealData();
 
-  // Fetch real NDMA alerts and filter for health-related ones
-  useEffect(() => {
-    setAlertsLoading(true);
-    fetch("/api/alerts")
-      .then(r => r.json())
-      .then((data) => {
-        if (Array.isArray(data)) {
-          const healthRelated = data.filter((a: RealAlert) => {
-            const type = (a.disasterType || "").toLowerCase();
-            return type.includes("heat") || type.includes("cold") || type.includes("health") ||
-                   type.includes("flood") || type.includes("rain") || type.includes("disease");
-          });
-          setHealthAlerts(healthRelated.slice(0, 5));
-        }
-      })
-      .catch(() => {})
-      .finally(() => setAlertsLoading(false));
-  }, []);
+  const healthAlerts = useMemo(() => {
+    return alerts.filter((a) => {
+      const type = (a.disasterType || "").toLowerCase();
+      return type.includes("heat") || type.includes("cold") || type.includes("health") ||
+             type.includes("flood") || type.includes("rain") || type.includes("disease");
+    }).slice(0, 5);
+  }, [alerts]);
 
   const toggleCheck = (id: number) => {
     setChecklist((prev) => prev.map((item) => (item.id === id ? { ...item, done: !item.done } : item)));

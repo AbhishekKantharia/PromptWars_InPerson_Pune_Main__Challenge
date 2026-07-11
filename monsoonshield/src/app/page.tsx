@@ -8,6 +8,7 @@ import LoginScreen from "@/components/screens/LoginScreen";
 import LoadingScreen from "@/components/LoadingScreen";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AuthProvider, useAuth } from "@/lib/AuthContext";
+import { RealDataProvider } from "@/lib/RealDataContext";
 
 // Screens
 import HomeScreen from "@/components/screens/HomeScreen";
@@ -98,7 +99,9 @@ export default function HomeApp() {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <AppContent />
+        <RealDataProvider>
+          <AppContent />
+        </RealDataProvider>
       </AuthProvider>
     </ErrorBoundary>
   );
