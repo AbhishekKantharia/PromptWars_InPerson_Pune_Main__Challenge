@@ -159,7 +159,7 @@ export async function POST(request: NextRequest) {
     // Build chat history (exclude last message)
     const chatHistory = (history || [])
       .slice(0, -1)
-      .map((msg: any) => ({
+      .map((msg: { role: string; content: string }) => ({
         role: msg.role === "assistant" ? "model" as const : "user" as const,
         parts: [{ text: msg.content }],
       }));
@@ -169,8 +169,8 @@ export async function POST(request: NextRequest) {
     const responseText = result.response.text();
 
     return NextResponse.json({ reply: responseText });
-  } catch (error: any) {
-    console.error("API /chat error:", error?.message || error);
+  } catch (error: unknown) {
+    console.error("API /chat error:", error instanceof Error ? error.message : error);
     return NextResponse.json(
       { error: "Failed to generate response" },
       { status: 500 }
