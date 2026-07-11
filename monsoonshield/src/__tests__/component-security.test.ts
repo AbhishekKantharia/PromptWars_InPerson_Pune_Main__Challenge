@@ -1,17 +1,4 @@
-import { describe, test, expect, vi } from "vitest";
-
-// Mock browser APIs
-const mockSpeechSynthesis = {
-  speak: vi.fn(),
-};
-const mockSpeechRecognition = vi.fn();
-
-beforeEach(() => {
-  Object.defineProperty(window, "speechSynthesis", {
-    value: mockSpeechSynthesis,
-    writable: true,
-  });
-});
+import { describe, test, expect } from "vitest";
 
 describe("Login Screen Security", () => {
   test("phone input accepts only digits", () => {

@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { AlertOctagon, HelpCircle, Loader2, Navigation, Phone, ShieldCheck } from "lucide-react";
+import { useState } from "react";
+import { AlertOctagon, Loader2, Navigation, Phone, ShieldCheck } from "lucide-react";
 
 export default function SosScreen() {
   const [sosTriggered, setSosTriggered] = useState(false);

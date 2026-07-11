@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { Tent, Check, CheckCircle2, Navigation, Phone, MapPin, Search } from "lucide-react";
+import { useState } from "react";
+import { Tent, Navigation, Phone, MapPin, Search } from "lucide-react";
 import { MOCK_SHELTERS } from "@/lib/mockData";
 import { getShelterCapacityColor } from "@/lib/utils";
 

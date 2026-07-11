@@ -57,7 +57,7 @@ describe("Security Headers Configuration", () => {
     const hstsValue = "max-age=63072000; includeSubDomains; preload";
     const match = hstsValue.match(/max-age=(\d+)/);
     expect(match).not.toBeNull();
-    const maxAge = parseInt(match![1]);
+    const maxAge = parseInt(match![1]!);
     expect(maxAge).toBeGreaterThanOrEqual(31536000); // 1 year
   });
 

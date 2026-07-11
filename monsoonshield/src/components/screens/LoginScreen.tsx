@@ -12,10 +12,9 @@ export default function LoginScreen() {
   const [showOtpDemo, setShowOtpDemo] = useState(false);
 
   useEffect(() => {
-    if (otpTimer > 0) {
-      const t = setTimeout(() => setOtpTimer((p) => p - 1), 1000);
-      return () => clearTimeout(t);
-    }
+    if (otpTimer <= 0) return;
+    const t = setTimeout(() => setOtpTimer((p) => p - 1), 1000);
+    return () => clearTimeout(t);
   }, [otpTimer]);
 
   return (
@@ -168,7 +167,7 @@ function PhoneStep({
         <button
           onClick={() => {
             setPhoneNumber("9876543210");
-            const otp = generateOTP();
+            generateOTP();
             setShowOtpDemo(true);
             setOtpTimer(30);
             setLoginStep("otp");

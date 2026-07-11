@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { CloudRain, Wind, Droplets, Info, Eye, TrendingUp } from "lucide-react";
+import { useState } from "react";
+import { Info, TrendingUp } from "lucide-react";
 import { MOCK_WEATHER, MOCK_FLOOD_PREDICTION } from "@/lib/mockData";
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine } from "recharts";
 
