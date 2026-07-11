@@ -325,3 +325,128 @@ body {
   90% { opacity: 1; }
   100% { transform: translateY(100vh); opacity: 0; }
 }
+
+/* Safe area padding for mobile notch devices */
+.safe-area-pb {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Mobile-first responsive utilities */
+@media (max-width: 768px) {
+  .glass-card {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .stat-card {
+    padding: 1rem;
+  }
+
+  .chat-bubble-user,
+  .chat-bubble-ai {
+    max-width: 85% !important;
+  }
+}
+
+/* Focus visible for keyboard navigation */
+*:focus-visible {
+  outline: 2px solid #06B6D4;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .raindrop {
+    display: none;
+  }
+
+  .pulse-red,
+  .sos-glow,
+  .float-animation {
+    animation: none !important;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .glass-card {
+    border: 2px solid #334155;
+    background: rgba(15, 23, 42, 0.95);
+  }
+
+  .chat-bubble-user,
+  .chat-bubble-ai {
+    border: 1px solid #475569;
+  }
+}
+
+/* Print styles */
+@media print {
+  .rain-container,
+  .raindrop,
+  nav,
+  aside,
+  .pulse-red,
+  .sos-glow {
+    display: none !important;
+  }
+
+  body {
+    background: white;
+    color: black;
+  }
+
+  .glass-card {
+    border: 1px solid #ccc;
+    background: white;
+  }
+}
+
+/* Touch target sizes (WCAG 2.5.5) */
+@media (pointer: coarse) {
+  button,
+  a,
+  [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Screen reader only */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Skip to content link */
+.skip-to-content {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: #06B6D4;
+  color: white;
+  padding: 8px 16px;
+  z-index: 100;
+  transition: top 0.2s;
+}
+
+.skip-to-content:focus {
+  top: 0;
+}
