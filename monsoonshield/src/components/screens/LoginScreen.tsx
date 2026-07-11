@@ -112,11 +112,15 @@ function PhoneStep({
   const handleSendOTP = () => {
     setError("");
     const cleaned = phoneNumber.replace(/\D/g, "");
-    if (cleaned.length < 10) {
-      setError("Please enter a valid 10-digit mobile number");
+    if (cleaned.length !== 10 || !/^[6-9]\d{9}$/.test(cleaned)) {
+      setError("Please enter a valid 10-digit Indian mobile number starting with 6-9");
       return;
     }
     const otp = generateOTP();
+    if (!otp) {
+      setError("Please wait before requesting another OTP");
+      return;
+    }
     setShowOtpDemo(true);
     setOtpTimer(30);
     setLoginStep("otp");
@@ -234,7 +238,7 @@ function OTPStep({
 
   const handleVerify = () => {
     setError("");
-    if (otpValue.length !== 6) {
+    if (!/^\d{6}$/.test(otpValue)) {
       setError("Please enter the complete 6-digit OTP");
       return;
     }
@@ -247,8 +251,12 @@ function OTPStep({
 
   const handleResend = () => {
     const otp = generateOTP();
-    setOtpTimer(30);
-    setOtpValue("");
+    if (otp) {
+      setOtpTimer(30);
+      setOtpValue("");
+    } else {
+      setError("Please wait before requesting another OTP");
+    }
   };
 
   return (

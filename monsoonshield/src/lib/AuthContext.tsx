@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
+import { encryptData, decryptData } from "@/lib/security";
 
 export interface UserProfile {
   id: string;
@@ -133,6 +134,14 @@ const INITIAL_NOTIFICATIONS: Notification[] = [
 
 let notifCounter = 100;
 
+// Rate limit for OTP generation
+let lastOTPTimestamp = 0;
+const OTP_COOLDOWN = 30000; // 30 seconds between OTPs
+
+// Max OTP attempts
+let otpAttemptCount = 0;
+const MAX_OTP_ATTEMPTS = 5;
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -142,35 +151,73 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [otpGenerated, setOtpGenerated] = useState("");
   const [notifications, setNotifications] = useState<Notification[]>(INITIAL_NOTIFICATIONS);
 
+  // Load encrypted user from localStorage on mount
   useEffect(() => {
-    const saved = typeof window !== "undefined" ? localStorage.getItem("ms_user") : null;
-    if (saved) {
+    const loadUser = async () => {
       try {
-        const parsed = JSON.parse(saved);
-        setUser(parsed);
-        setIsAuthenticated(true);
-        setLoginStep("done");
-      } catch { /* ignore */ }
-    }
+        const saved = typeof window !== "undefined" ? localStorage.getItem("ms_user_enc") : null;
+        if (saved) {
+          const decrypted = await decryptData(saved);
+          const parsed = JSON.parse(decrypted);
+          setUser(parsed);
+          setIsAuthenticated(true);
+          setLoginStep("done");
+        }
+      } catch {
+        // If decryption fails, clear corrupted data
+        localStorage.removeItem("ms_user_enc");
+        localStorage.removeItem("ms_user");
+      }
+    };
+    loadUser();
+  }, []);
+
+  // Sanitize phone number input
+  const setPhoneNumberSafe = useCallback((phone: string) => {
+    const cleaned = phone.replace(/\D/g, "").slice(0, 10);
+    setPhoneNumber(cleaned);
   }, []);
 
   const generateOTP = useCallback(() => {
-    const otp = String(Math.floor(100000 + Math.random() * 900000));
+    const now = Date.now();
+    if (now - lastOTPTimestamp < OTP_COOLDOWN) {
+      return "";
+    }
+    lastOTPTimestamp = now;
+    otpAttemptCount = 0;
+
+    // Use crypto API for secure random OTP
+    const array = new Uint8Array(6);
+    crypto.getRandomValues(array);
+    const otp = Array.from(array, (b) => b % 10).join("");
     setOtpGenerated(otp);
     return otp;
   }, []);
 
   const verifyOTP = useCallback(() => {
+    if (otpAttemptCount >= MAX_OTP_ATTEMPTS) {
+      return false;
+    }
+    otpAttemptCount++;
     return otpValue === otpGenerated && otpGenerated.length === 6;
   }, [otpValue, otpGenerated]);
 
-  const completeProfile = useCallback((partial: Partial<UserProfile>) => {
+  const completeProfile = useCallback(async (partial: Partial<UserProfile>) => {
     const newUser = { ...DEFAULT_USER, ...partial, id: `user_${Date.now()}` };
     setUser(newUser);
     setIsAuthenticated(true);
     setLoginStep("done");
-    if (typeof window !== "undefined") {
-      localStorage.setItem("ms_user", JSON.stringify(newUser));
+
+    // Encrypt and store user data
+    try {
+      const encrypted = await encryptData(JSON.stringify(newUser));
+      if (typeof window !== "undefined") {
+        localStorage.setItem("ms_user_enc", encrypted);
+        // Remove old plaintext data if exists
+        localStorage.removeItem("ms_user");
+      }
+    } catch {
+      console.error("Failed to encrypt user data");
     }
   }, []);
 
@@ -181,8 +228,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setPhoneNumber("");
     setOtpValue("");
     setOtpGenerated("");
+    otpAttemptCount = 0;
     if (typeof window !== "undefined") {
+      localStorage.removeItem("ms_user_enc");
       localStorage.removeItem("ms_user");
+      // Clear encryption key
+      sessionStorage.removeItem("ms_enc_key");
     }
   }, []);
 
@@ -216,7 +267,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         phoneNumber,
         otpValue,
         otpGenerated,
-        setPhoneNumber,
+        setPhoneNumber: setPhoneNumberSafe,
         setOtpValue,
         setLoginStep,
         generateOTP,
