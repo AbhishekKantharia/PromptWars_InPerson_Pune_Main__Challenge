@@ -154,32 +154,15 @@ I can help you with:
 
   const startVoiceRecognition = () => {
     if (typeof window === "undefined") return;
-    interface SpeechRecognitionLike {
-      new (): SpeechRecognitionInstance;
-    }
-    interface SpeechRecognitionInstance {
-      lang: string;
-      continuous: boolean;
-      interimResults: boolean;
-      onresult: ((event: SpeechRecognitionEvent) => void) | null;
-      onerror: ((event: unknown) => void) | null;
-      start: () => void;
-    }
     interface SpeechRecognitionEvent {
-      results: SpeechRecognitionResultList;
-    }
-    interface SpeechRecognitionResultList {
-      [index: number]: SpeechRecognitionResult;
-    }
-    interface SpeechRecognitionResult {
-      [index: number]: SpeechRecognitionAlternative;
-    }
-    interface SpeechRecognitionAlternative {
-      transcript: string;
+      results: { [index: number]: { [index: number]: { transcript: string } } };
     }
 
-    const WinWithSR = window as unknown as { SpeechRecognition?: SpeechRecognitionLike; webkitSpeechRecognition?: SpeechRecognitionLike };
-    const SpeechRecognition = WinWithSR.SpeechRecognition || WinWithSR.webkitSpeechRecognition;
+    const WinWithSR = window as unknown as {
+      SpeechRecognition?: new () => { lang: string; continuous: boolean; interimResults: boolean; onresult: ((e: SpeechRecognitionEvent) => void) | null; onerror: ((e: unknown) => void) | null; start: () => void };
+      webkitSpeechRecognition?: new () => { lang: string; continuous: boolean; interimResults: boolean; onresult: ((e: SpeechRecognitionEvent) => void) | null; onerror: ((e: unknown) => void) | null; start: () => void };
+    };
+    const SpeechRecognitionAPI = WinWithSR.SpeechRecognition || WinWithSR.webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
       alert("Voice input is not supported in this browser. Try Chrome.");
