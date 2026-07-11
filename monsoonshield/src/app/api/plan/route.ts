@@ -59,8 +59,8 @@ Cite NDMA guidelines. Be specific to their situation.`;
     const result = await model.generateContent(prompt);
 
     return NextResponse.json({ plan: result.response.text() });
-  } catch (error: any) {
-    console.error("API /plan error:", error?.message);
+  } catch (error: unknown) {
+    console.error("API /plan error:", error instanceof Error ? error.message : error);
     return NextResponse.json({ error: "Failed to generate plan" }, { status: 500 });
   }
 }
