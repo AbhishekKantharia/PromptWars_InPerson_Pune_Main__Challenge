@@ -147,9 +147,11 @@ export async function POST(request: NextRequest) {
       ? `\n\n## USER CONTEXT\n- Location: ${context.location || "India"}\n- Risk Score: ${context.riskScore || "Unknown"}/100\n- Language: ${context.language || "English"}\n- Family: ${context.familySize || "Unknown"} members\n- Children: ${context.hasChildren ? "Yes" : "No"}\n- Elderly: ${context.hasElderly ? "Yes" : "No"}\n- Medical: ${context.hasMedical ? "Yes" : "No"}`
       : "";
 
-    // Fetch real-time data from public APIs
+    // Fetch real-time data from public APIs using user-provided coordinates
+    const userLat = parseFloat(context?.lat) || 18.52;
+    const userLng = parseFloat(context?.lng) || 73.86;
     const realtimeData = await fetchAllRealData(
-      18.52, 73.86,
+      userLat, userLng,
       context?.location || "Pune, Maharashtra"
     );
 

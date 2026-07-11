@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { location, language } = body;
+    const { location, language, lat, lng } = body;
 
     if (!location || typeof location !== "string" || location.length > 200) {
       return NextResponse.json({ error: "Invalid location" }, { status: 400 });
@@ -38,8 +38,10 @@ export async function POST(request: NextRequest) {
 
     const lang = language === "hi" ? "Hindi" : "English";
 
-    // Fetch real-time data
-    const realtimeData = await fetchAllRealData(18.52, 73.86, location);
+    // Fetch real-time data using user-provided coordinates
+    const userLat = parseFloat(lat) || 18.52;
+    const userLng = parseFloat(lng) || 73.86;
+    const realtimeData = await fetchAllRealData(userLat, userLng, location);
 
     const systemPrompt = `You are Varsha, MonsoonShield's AI monsoon briefing assistant grounded in IMD and NDMA guidelines.
 

@@ -30,14 +30,16 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { location, familySize, hasChildren, hasElderly, hasMedicalConditions, homeType, hasVehicle, floodRiskScore } = body;
+    const { location, familySize, hasChildren, hasElderly, hasMedicalConditions, homeType, hasVehicle, floodRiskScore, lat, lng } = body;
 
     if (!location || typeof location !== "string" || location.length > 200) {
       return NextResponse.json({ error: "Invalid location" }, { status: 400 });
     }
 
-    // Fetch real-time data
-    const realtimeData = await fetchAllRealData(18.52, 73.86, location);
+    // Fetch real-time data using user-provided coordinates
+    const userLat = parseFloat(lat) || 18.52;
+    const userLng = parseFloat(lng) || 73.86;
+    const realtimeData = await fetchAllRealData(userLat, userLng, location);
 
     const systemPrompt = `You are Varsha, MonsoonShield's AI preparedness planning assistant grounded in NDMA guidelines.
 
