@@ -181,7 +181,7 @@ export default function DashboardScreen({ setActiveTab, language }: DashboardScr
               </div>
             ) : (
               <p className="text-xs text-slate-300 leading-relaxed italic mt-1">
-                "{briefing}"
+                &quot;{briefing}&quot;
               </p>
             )}
           </div>
