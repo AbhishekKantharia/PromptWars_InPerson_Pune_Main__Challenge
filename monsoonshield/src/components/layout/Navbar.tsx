@@ -44,7 +44,7 @@ export default function Navbar({
             <span className="font-bold text-lg tracking-wide text-white">MonsoonShield</span>
             <span className="block text-[10px] text-slate-400 font-semibold tracking-wider uppercase -mt-1">वर्षा कवच</span>
           </div>
-        </a>
+        </Link>
 
         {/* Right Controls */}
         <div className="flex items-center gap-3">
