@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import {
   Camera, MapPin, CheckCircle2, Upload,
   Phone, AlertTriangle, ChevronRight, Shield
@@ -25,10 +25,10 @@ export default function InsuranceScreen() {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({ description: "", date: "", location: "" });
   const [submitted, setSubmitted] = useState(false);
-
-  const claimId = useMemo(() => `CLM-${Date.now().toString().slice(-6)}`, []);
+  const [claimId, setClaimId] = useState("");
 
   const handleSubmit = () => {
+    setClaimId(`CLM-${Date.now().toString().slice(-6)}`);
     setSubmitted(true);
   };
 
