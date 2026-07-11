@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Send, Sparkles, Mic, Volume2, Info, Loader2, Trash2 } from "lucide-react";
 import { sendMessage, ChatMessage } from "@/lib/gemini";
 import { useAuth } from "@/lib/AuthContext";

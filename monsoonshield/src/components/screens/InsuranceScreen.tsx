@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 import {
-  FileText, Camera, MapPin, Clock, CheckCircle2, Upload,
+  Camera, MapPin, CheckCircle2, Upload,
   Phone, AlertTriangle, ChevronRight, Shield
 } from "lucide-react";
 

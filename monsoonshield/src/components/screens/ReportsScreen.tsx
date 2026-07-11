@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { Users, AlertTriangle, CheckCircle, Image as ImageIcon, MapPin, Plus, ThumbsUp } from "lucide-react";
+import { useState } from "react";
+import { CheckCircle, Image as ImageIcon, MapPin, Plus, ThumbsUp } from "lucide-react";
 import { MOCK_COMMUNITY_REPORTS } from "@/lib/mockData";
 
 export default function ReportsScreen() {

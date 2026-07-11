@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { Shield, Sparkles, AlertTriangle, Users, MapPin, CheckCircle, PhoneCall, ArrowRight } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Sparkles, AlertTriangle, ArrowRight } from "lucide-react";
 import { MOCK_ALERTS } from "@/lib/mockData";
 
 interface HomeScreenProps {
@@ -9,7 +9,7 @@ interface HomeScreenProps {
   setShowEmergencyModal: (show: boolean) => void;
 }
 
-export default function HomeScreen({ setActiveTab, setShowEmergencyModal }: HomeScreenProps) {
+export default function HomeScreen({ setActiveTab, setShowEmergencyModal: _setShowEmergencyModal }: HomeScreenProps) {
   const [drops, setDrops] = useState<{ id: number; left: string; delay: string; duration: string }[]>([]);
 
   useEffect(() => {
@@ -122,7 +122,7 @@ export default function HomeScreen({ setActiveTab, setShowEmergencyModal }: Home
                   Active Regional Alert
                 </span>
                 <span className="block text-sm font-semibold text-white">
-                  {MOCK_ALERTS[0].title} — {MOCK_ALERTS[0].area}
+                  {MOCK_ALERTS[0]?.title} — {MOCK_ALERTS[0]?.area}
                 </span>
               </div>
             </div>

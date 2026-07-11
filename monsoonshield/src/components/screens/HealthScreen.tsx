@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 import {
-  Thermometer, Droplets, Wind, Bug, AlertTriangle, Phone,
-  ChevronRight, Activity, Pill, Heart, Shield
+  Droplets, Wind, Bug, AlertTriangle, Phone,
+  Heart, Shield
 } from "lucide-react";
 
 const DISEASE_ALERTS = [

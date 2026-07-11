@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { Heart, MapPin, Phone, Users, ShieldAlert, CheckCircle, Navigation } from "lucide-react";
+import { useState } from "react";
+import { Heart, MapPin } from "lucide-react";
 
 export default function FamilyScreen() {
   const [members, setMembers] = useState([

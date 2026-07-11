@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 import {
-  Shield, Phone, Globe, ChevronDown, Bell, User, X, LogOut
+  Shield, Phone, Globe, ChevronDown, Bell, X, LogOut
 } from "lucide-react";
 import { LANGUAGES, EMERGENCY_CONTACTS } from "@/lib/utils";
 import { useAuth } from "@/lib/AuthContext";

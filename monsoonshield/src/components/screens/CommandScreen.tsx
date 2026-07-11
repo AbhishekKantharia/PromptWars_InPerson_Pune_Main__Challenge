@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { ShieldAlert, Users, Tent, Navigation, CheckCircle, AlertTriangle, Play } from "lucide-react";
+import { useState } from "react";
+import { Play } from "lucide-react";
 import { MOCK_VOLUNTEERS } from "@/lib/mockData";
 
 export default function CommandScreen() {

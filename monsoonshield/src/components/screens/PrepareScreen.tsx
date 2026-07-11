@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { Sparkles, CheckCircle2, Circle, ListTodo, ShieldCheck, Heart, User, Tent } from "lucide-react";
+import { useState } from "react";
+import { Sparkles, CheckCircle2, Circle, ListTodo } from "lucide-react";
 import { generatePreparednessplan } from "@/lib/gemini";
 
 export default function PrepareScreen() {

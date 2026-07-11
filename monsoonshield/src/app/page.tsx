@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, Suspense } from "react";
+import { useState, Suspense } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Sidebar, { SidebarTab } from "@/components/layout/Sidebar";
 import MobileNav from "@/components/layout/MobileNav";

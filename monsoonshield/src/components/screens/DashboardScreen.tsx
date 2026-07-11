@@ -1,16 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   AlertTriangle,
-  CloudRain,
   MapPin,
-  TrendingUp,
-  FileText,
-  User,
-  Heart,
   ChevronRight,
-  ShieldCheck,
   Zap,
 } from "lucide-react";
 import { MOCK_ALERTS, MOCK_WEATHER, RISK_SCORE_FACTORS } from "@/lib/mockData";
@@ -25,7 +19,7 @@ interface DashboardScreenProps {
 
 export default function DashboardScreen({ setActiveTab, language }: DashboardScreenProps) {
   const { user } = useAuth();
-  const [riskScore, setRiskScore] = useState(58);
+  const [riskScore] = useState(58);
   const [briefing, setBriefing] = useState("");
   const [isGeneratingBriefing, setIsGeneratingBriefing] = useState(false);
 

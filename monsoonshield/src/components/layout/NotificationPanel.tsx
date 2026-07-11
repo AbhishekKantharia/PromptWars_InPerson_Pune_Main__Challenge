@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { Bell, X, CheckCheck, AlertTriangle, Shield, Users, Info, Heart, ChevronRight } from "lucide-react";
 import { useAuth, Notification } from "@/lib/AuthContext";
 
