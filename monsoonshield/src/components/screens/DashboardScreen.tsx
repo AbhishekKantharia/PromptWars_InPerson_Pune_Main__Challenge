@@ -46,6 +46,10 @@ export default function DashboardScreen({ setActiveTab, language }: DashboardScr
     }
   };
 
+  useEffect(() => {
+    generateAIBriefing();
+  }, [language]);
+
   return (
     <div className="p-6 space-y-6 max-h-[calc(100vh-73px)] overflow-y-auto w-full">
       {/* Location Bar */}
