@@ -57,8 +57,8 @@ Use NDMA/IMD language. Be factual, calm, actionable.`;
     const result = await model.generateContent(prompt);
 
     return NextResponse.json({ briefing: result.response.text() });
-  } catch (error: any) {
-    console.error("API /briefing error:", error?.message);
+  } catch (error: unknown) {
+    console.error("API /briefing error:", error instanceof Error ? error.message : error);
     return NextResponse.json({ error: "Failed to generate briefing" }, { status: 500 });
   }
 }
