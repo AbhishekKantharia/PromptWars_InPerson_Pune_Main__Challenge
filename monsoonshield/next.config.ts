@@ -30,10 +30,6 @@ const securityHeaders = [
     value: "camera=(), microphone=(self), geolocation=(self), interest-cohort=()",
   },
   {
-    key: "X-Permitted-Cross-Domain-Policies",
-    value: "none",
-  },
-  {
     key: "Cross-Origin-Opener-Policy",
     value: "same-origin",
   },
@@ -41,14 +37,9 @@ const securityHeaders = [
     key: "Cross-Origin-Resource-Policy",
     value: "same-origin",
   },
-  {
-    key: "Cross-Origin-Embedder-Policy",
-    value: "unsafe-none",
-  },
 ];
 
 const nextConfig: NextConfig = {
-  poweredBy: false,
   reactStrictMode: true,
   headers: async () => [
     {
@@ -72,13 +63,6 @@ const nextConfig: NextConfig = {
           value: "0",
         },
       ],
-    },
-  ],
-  redirects: async () => [
-    {
-      source: "/api/gemini(.*)",
-      destination: "/api/chat",
-      permanent: true,
     },
   ],
 };
