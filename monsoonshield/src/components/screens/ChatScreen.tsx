@@ -164,22 +164,22 @@ I can help you with:
     };
     const SpeechRecognitionAPI = WinWithSR.SpeechRecognition || WinWithSR.webkitSpeechRecognition;
 
-    if (!SpeechRecognition) {
+    if (!SpeechRecognitionAPI) {
       alert("Voice input is not supported in this browser. Try Chrome.");
       return;
     }
 
-    const recognition = new SpeechRecognition();
+    const recognition = new SpeechRecognitionAPI();
     recognition.lang = language === "hi" ? "hi-IN" : "en-IN";
     recognition.continuous = false;
     recognition.interimResults = false;
 
-    recognition.onresult = (event: any) => {
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
       const resultText = event.results[0][0].transcript;
       setInputValue(resultText);
     };
 
-    recognition.onerror = (e: any) => {
+    recognition.onerror = (e: unknown) => {
       console.error("Voice recognition error:", e);
     };
 
