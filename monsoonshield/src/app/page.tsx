@@ -1,9 +1,12 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, Suspense } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Sidebar, { SidebarTab } from "@/components/layout/Sidebar";
+import MobileNav from "@/components/layout/MobileNav";
 import LoginScreen from "@/components/screens/LoginScreen";
+import LoadingScreen from "@/components/LoadingScreen";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AuthProvider, useAuth } from "@/lib/AuthContext";
 
 // Screens
@@ -65,19 +68,28 @@ function AppContent() {
         onNavigate={setActiveTab}
       />
       <div className="flex-1 flex">
-        <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
-        <main className="flex-1 bg-slate-950/20 relative">
-          {renderActiveScreen()}
+        {/* Desktop Sidebar - hidden on mobile */}
+        <div className="hidden md:block">
+          <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+        </div>
+        <main className="flex-1 bg-slate-950/20 relative pb-20 md:pb-0">
+          <Suspense fallback={<LoadingScreen />}>
+            {renderActiveScreen()}
+          </Suspense>
         </main>
       </div>
+      {/* Mobile Bottom Nav */}
+      <MobileNav activeTab={activeTab} setActiveTab={setActiveTab} />
     </div>
   );
 }
 
 export default function HomeApp() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
