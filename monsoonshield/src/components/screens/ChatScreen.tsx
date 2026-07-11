@@ -220,7 +220,7 @@ I can help you with:
           <div>
             <h3 className="text-sm font-bold text-white leading-none">Chat with Varsha AI</h3>
             <span className="text-[10px] text-green-400 font-semibold uppercase tracking-wider">
-              Online &middot; NDMA-Grounded &middot; Gemini 2.5
+              Online &middot; Live Data &middot; Gemini 3.5
             </span>
           </div>
         </div>
