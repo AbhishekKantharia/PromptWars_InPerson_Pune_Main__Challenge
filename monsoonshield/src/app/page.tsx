@@ -3,6 +3,8 @@
 import React, { useState } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Sidebar, { SidebarTab } from "@/components/layout/Sidebar";
+import LoginScreen from "@/components/screens/LoginScreen";
+import { AuthProvider, useAuth } from "@/lib/AuthContext";
 
 // Screens
 import HomeScreen from "@/components/screens/HomeScreen";
@@ -16,10 +18,15 @@ import WeatherScreen from "@/components/screens/WeatherScreen";
 import FamilyScreen from "@/components/screens/FamilyScreen";
 import CommandScreen from "@/components/screens/CommandScreen";
 
-export default function HomeApp() {
+function AppContent() {
+  const { isAuthenticated, user } = useAuth();
   const [activeTab, setActiveTab] = useState<SidebarTab>("home");
-  const [language, setLanguage] = useState("en");
+  const [language, setLanguage] = useState(user?.preferredLanguage || "en");
   const [showEmergencyModal, setShowEmergencyModal] = useState(false);
+
+  if (!isAuthenticated) {
+    return <LoginScreen />;
+  }
 
   const renderActiveScreen = () => {
     switch (activeTab) {
@@ -50,15 +57,13 @@ export default function HomeApp() {
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col">
-      {/* Navbar */}
       <Navbar
         currentLanguage={language}
         setLanguage={setLanguage}
         showEmergencyModal={showEmergencyModal}
         setShowEmergencyModal={setShowEmergencyModal}
+        onNavigate={setActiveTab}
       />
-
-      {/* Main body: Sidebar + Screen */}
       <div className="flex-1 flex">
         <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
         <main className="flex-1 bg-slate-950/20 relative">
@@ -66,5 +71,13 @@ export default function HomeApp() {
         </main>
       </div>
     </div>
+  );
+}
+
+export default function HomeApp() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
