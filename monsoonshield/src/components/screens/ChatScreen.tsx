@@ -11,11 +11,37 @@ interface ChatScreenProps {
 
 export default function ChatScreen({ language }: ChatScreenProps) {
   const { user } = useAuth();
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    {
+      role: "assistant",
+      content: `Namaste! 🙏 I'm Varsha (वर्षा), your MonsoonShield AI assistant.
+
+I can help you with:
+🌊 Flood safety & emergency guidance
+🏠 Finding nearest emergency shelters
+📋 Personalized monsoon preparedness plans
+🏥 Health advisories — dengue, malaria prevention
+🏛️ Government relief schemes & insurance claims
+👨‍👩‍👧 Family safety & check-in protocols
+
+**Try asking me:**
+• "What should I do if my area floods?"
+• "Find nearest emergency shelter"
+• "Generate my preparedness checklist"
+• "How to prevent dengue?"
+
+⚡ Powered by Google Gemini AI | Grounded in NDMA guidelines`,
+      timestamp: new Date(),
+    },
+  ]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [ttsEnabled, setTtsEnabled] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
   useEffect(() => {
     const welcomeHi = `नमस्ते! 🙏 मैं वर्षा (Varsha) हूँ, आपकी MonsoonShield AI सहायता गाइड।
