@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { Shield, Phone, Lock, User, ChevronRight, CheckCircle2, MapPin, Users, Home, Baby, Heart, Car, Globe } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
+import { UserProfile } from "@/lib/AuthContext";
 import { LANGUAGES } from "@/lib/utils";
 
 export default function LoginScreen() {
@@ -27,14 +28,14 @@ export default function LoginScreen() {
   return (
     <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4 relative overflow-hidden">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {Array.from({ length: 20 }).map((_, i) => (
+        {raindrops.map((drop) => (
           <div
-            key={i}
+            key={drop.id}
             className="raindrop"
             style={{
-              left: `${Math.random() * 100}%`,
-              animationDuration: `${1 + Math.random() * 2}s`,
-              animationDelay: `${Math.random() * 3}s`,
+              left: drop.left,
+              animationDuration: drop.duration,
+              animationDelay: drop.delay,
             }}
           />
         ))}
