@@ -179,7 +179,7 @@ export default function Navbar({
                   <div className="px-3 py-1.5 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400 text-xs font-bold">
                     CALL
                   </div>
-                </a>
+        </Link>
               ))}
             </div>
           </div>
