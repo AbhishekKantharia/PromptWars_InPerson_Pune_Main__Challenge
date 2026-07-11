@@ -86,7 +86,12 @@ export async function generatePreparednessplan(profile: {
       body: JSON.stringify(profile),
     });
 
-    if (!res.ok) return DEMO_PREPAREDNESS_PLAN;
+    if (!res.ok) {
+      if (res.status === 429) {
+        return "⚠️ AI service quota temporarily reached. Your preparedness plan will be available again in a few minutes.\n\n📞 Emergency: 112 | Flood Helpline: 1078";
+      }
+      return DEMO_PREPAREDNESS_PLAN;
+    }
     const data = await res.json();
     return data.plan || DEMO_PREPAREDNESS_PLAN;
   } catch {
