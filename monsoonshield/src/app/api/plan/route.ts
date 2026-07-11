@@ -52,6 +52,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid location" }, { status: 400 });
     }
 
+    // Check cache
+    const cacheKey = `${location}:${familySize}:${hasChildren}:${hasElderly}:${hasMedicalConditions}:${homeType}:${hasVehicle}:${floodRiskScore}`;
+    const cached = getCachedPlan(cacheKey);
+    if (cached) {
+      return NextResponse.json({ plan: cached, cached: true });
+    }
+
     // Fetch real-time data using user-provided coordinates
     const userLat = parseFloat(lat) || 18.52;
     const userLng = parseFloat(lng) || 73.86;
@@ -108,17 +115,30 @@ All cost figures must be labeled as "estimated" and are approximate Indian marke
         break;
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "";
-        if (msg.includes("503") && attempt < 2) {
-          await new Promise((r) => setTimeout(r, 2000 * (attempt + 1)));
+        if ((msg.includes("503") || msg.includes("429")) && attempt < 2) {
+          const retryMs = msg.includes("429") ? 60000 : 2000 * (attempt + 1);
+          await new Promise((r) => setTimeout(r, retryMs));
           continue;
         }
         throw e;
       }
     }
 
-    return NextResponse.json({ plan: result!.response.text() });
+    const text = result!.response.text();
+    setPlanCache(cacheKey, text);
+
+    return NextResponse.json({ plan: text });
   } catch (error: unknown) {
-    console.error("API /plan error:", error instanceof Error ? error.message : error);
+    const errMsg = error instanceof Error ? error.message : String(error);
+    console.error("API /plan error:", errMsg);
+
+    if (errMsg.includes("429") || errMsg.includes("quota")) {
+      return NextResponse.json(
+        { error: "AI service quota reached. Plan generation temporarily unavailable." },
+        { status: 429 }
+      );
+    }
+
     return NextResponse.json({ error: "Failed to generate plan" }, { status: 500 });
   }
 }

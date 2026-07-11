@@ -28,6 +28,9 @@ export async function sendMessage(
     });
 
     if (!res.ok) {
+      if (res.status === 429) {
+        return "⚠️ AI service quota temporarily reached. Please try again in a few minutes, or call 1078 (Flood Helpline) for immediate help.\n\n📞 Emergency: 112 | Flood Helpline: 1078";
+      }
       console.error("Chat API error:", res.status);
       return getDemoResponse(message, userContext);
     }
@@ -53,7 +56,12 @@ export async function generateBriefing(context?: {
       body: JSON.stringify(context),
     });
 
-    if (!res.ok) return getDemoBriefing(context);
+    if (!res.ok) {
+      if (res.status === 429) {
+        return "⚠️ AI service quota temporarily reached. Your briefing will be available again in a few minutes.\n\nPlease check IMD (mausam.imd.gov.in) or call 1078 (Flood Helpline) for the latest information.\n📞 Emergency: 112 | Flood Helpline: 1078";
+      }
+      return getDemoBriefing(context);
+    }
     const data = await res.json();
     return data.briefing || getDemoBriefing(context);
   } catch {
