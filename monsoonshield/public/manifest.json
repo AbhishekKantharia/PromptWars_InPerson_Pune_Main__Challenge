@@ -1,0 +1,48 @@
+{
+  "name": "MonsoonShield — AI-Powered Monsoon Preparedness",
+  "short_name": "MonsoonShield",
+  "description": "India's AI-Native Disaster Shield. Personalized monsoon preparedness, real-time alerts, emergency SOS, and community coordination powered by Google Gemini AI.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0F172A",
+  "theme_color": "#2563EB",
+  "orientation": "any",
+  "scope": "/",
+  "lang": "en",
+  "categories": ["safety", "weather", "utilities"],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Emergency SOS",
+      "short_name": "SOS",
+      "url": "/?tab=sos",
+      "description": "One-tap emergency SOS to NDRF"
+    },
+    {
+      "name": "Weather Intel",
+      "short_name": "Weather",
+      "url": "/?tab=weather",
+      "description": "Real-time weather and flood predictions"
+    },
+    {
+      "name": "Varsha AI Chat",
+      "short_name": "AI Chat",
+      "url": "/?tab=chat",
+      "description": "Chat with Varsha AI for monsoon guidance"
+    }
+  ]
+}
