@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import {
   Shield, Phone, Globe, ChevronDown, Bell, X, LogOut
 } from "lucide-react";
@@ -35,7 +36,7 @@ export default function Navbar({
     <>
       <nav className="sticky top-0 z-40 w-full border-b border-slate-800 bg-slate-900/80 backdrop-blur-md px-6 py-4 flex items-center justify-between">
         {/* Brand */}
-        <a className="flex items-center gap-2 cursor-pointer" href="/">
+        <Link className="flex items-center gap-2 cursor-pointer" href="/">
           <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-cyan-500 shadow-md">
             <Shield className="h-6 w-6 text-white" />
           </div>
