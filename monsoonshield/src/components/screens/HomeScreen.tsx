@@ -40,7 +40,7 @@ export default function HomeScreen({ setActiveTab }: HomeScreenProps) {
         {/* Animated Badge */}
         <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/30 text-cyan-400 text-xs font-semibold uppercase tracking-wider mb-6 float-animation">
           <Sparkles className="h-3.5 w-3.5" />
-          <span>India's AI-Native Disaster Shield</span>
+          <span>India&apos;s AI-Native Disaster Shield</span>
         </div>
 
         {/* Hero Headline */}
