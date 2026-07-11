@@ -66,11 +66,12 @@ I can help you with:
   useEffect(() => {
     fetch("/api/weather")
       .then(r => r.json())
-      .then((data: RealWeather) => {
-        if (!data.error && "rainfallMm" in data) {
-          const rainfallScore = Math.min(40, (data.rainfallMm / 100) * 40);
-          const windScore = Math.min(20, (data.windSpeed / 100) * 20);
-          const humidityScore = data.humidity > 90 ? 15 : data.humidity > 75 ? 8 : 0;
+      .then((data) => {
+        if (data && "rainfallMm" in data) {
+          const w = data as RealWeather;
+          const rainfallScore = Math.min(40, (w.rainfallMm / 100) * 40);
+          const windScore = Math.min(20, (w.windSpeed / 100) * 20);
+          const humidityScore = w.humidity > 90 ? 15 : w.humidity > 75 ? 8 : 0;
           const score = Math.round(rainfallScore + windScore + humidityScore + 10);
           setRiskScore(Math.max(10, Math.min(95, score)));
         }
