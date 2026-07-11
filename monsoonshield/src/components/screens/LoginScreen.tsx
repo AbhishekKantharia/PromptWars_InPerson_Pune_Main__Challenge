@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { Shield, Phone, Lock, User, ChevronRight, CheckCircle2, MapPin, Users, Home, Baby, Heart, Car, Globe } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { LANGUAGES } from "@/lib/utils";

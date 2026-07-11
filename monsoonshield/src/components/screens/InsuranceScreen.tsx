@@ -46,7 +46,7 @@ export default function InsuranceScreen() {
           <div className="p-4 rounded-xl bg-slate-800/50 border border-slate-700 text-left space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-slate-400">Claim ID</span>
-              <span className="text-white font-mono font-bold">CLM-{Date.now().toString().slice(-6)}</span>
+              <span className="text-white font-mono font-bold">{claimId}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-slate-400">Type</span>
